@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head>
+    <link rel="stylesheet" type="text/css" href="/demos/demo.css" />
+
+    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script src="/lib/sockjs/sockjs.min.js"></script><!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
+    <script type="text/javascript" src="/lib/flot/jquery.flot.js"></script>
+    <script type="text/javascript" src="/lib/flot/jquery.flot.canvas.js"></script>
+    <script type="text/javascript" src="/lib/flot/jquery.flot.downsample.js"></script>
+    <script src="/multiplex.js"></script>
+    <script src="eeg-flot.js"></script>
+<head>
+<body lang="en">
+    <h5><a href="/">Back</a></h5>
+    <h4>EEG Demo with <a href="http://www.flotcharts.org/flot/examples/" target="_blank">Flot</a></h4>
+    <!-- metric channel container -->
+    <div id="first" class="box chartContainer">
+        <select class="metricSelect">
+            <option value="eegd" selected="selected">eegd</option>
+        </select>
+        <!-- connection buttons -->
+        <!-- connection buttons -->
+        <button class="connect">connect</button>
+        <button class="disconnect hidden">disconnect</button>
+        <button class="add">random data reset</button>
+    </div>
+    <!-- -->
+    <div class="demo-container">
+        <div id="placeholder" class="demo-placeholder" style="height: 100px; width:50%;"></div>
+    </div>
+
+
+
+</body></html>

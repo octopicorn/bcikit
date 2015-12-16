@@ -1,0 +1,1 @@
+http://code.shutterstock.com/rickshaw/
