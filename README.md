@@ -1,15 +1,47 @@
-# CloudbrainAnalysis
-Modular analysis of cloudbrain data streams, with visualization component
+# bcikit
+Modular analysis of biosensor data streams, with visualization component, especially designed for EEG signals.
+Currently only supports OpenBCI hardware.
 
-This application depends upon the cloudbrain library being importable by Python.
+## What it does
+Primary objective is a modular processing chain, which can analyze incoming data streaming from an EEG device.
+Signal processing tasks include:
+- Mock signal generation for testing (random, sine wave)
+- Class label generation (these can also be thought of as "cues" for the BCI user)
+- Notch filter
+- Bandpass filter (high, low)
+- FFT (frequency analysis)
+- DWT (frequency-time-phase analyis)
+- Signal conversion (from scalar to cartesian coordinates for plotting)
+- Fixed length windowing (on a rolling basis, with overlap, for training phase)
+- Class segregated windowing (for testing phase, and online use)
+- Downsampling (using simple decimation, or advanced LTTB algorithm)
+- Machine Learning (realtime data with scikit-learn)
 
-This a very early rough draft. Here's what we have so far:
+## Limitations
+This software is designed with the open-source user in mind. In the neurotech community, this type of use case is 
+ often designated "consumer-grade", as distinguished from "research-grade".  This distinction serves to set expectations
+ about the resources and expertise of the user.  For example, a home user operating a $500 device, with no formal 
+ neuroscience background, will be expected to have a different set of requirements than an academic user, in a lab
+ setting, operating a $10,000+ system in the service of funded research.
+ 
+In general, "consumer grade" means a device offering lower spatial resolution (1-16 electrodes, vs 32-128 in higher end 
+systems), and lower sampling rate (100-250Hz, vs 1000Hz), which means more modest BCI challenges can be targeted. Some
+examples of "consumer-grade" projects include: motor imagery detection, neurofeedback training, P300 speller, SSVEP
+controlled applications, and general entertainment projects, like controlling remote control toys and vehicles.
 
 ## Prerequisites
 
-1. cloudbrain https://github.com/marionleborgne/cloudbrain
-2. tornado http://www.tornadoweb.org
+Python 2.7
+(note: the excellent Anaconda scientific package for Python is highly recommended to satisfy the most commonly used
+dependencies quickly) 
 
+- numpy (install with conda or pip)
+- scikit-learn (install with conda or pip)
+- json (install with conda or pip)
+- tornado http://www.tornadoweb.org
+- cloudbrain https://github.com/marionleborgne/cloudbrain (note: you'll need to install CloudBrain's dependencies too, 
+such as liblo.  You can skip the Cassandra install step, unless you're really sure you will be using it.)
+ 
 ## Installation
 Install using normal procedure
 
@@ -23,7 +55,7 @@ python setup.py install
 ```
 
 ## Quickstart
-* make sure you have a device connector streaming live data
+* make sure you have a device connector streaming live data with CloudBrain base install on your system
 (mock connector example given)
 ```
   python {cloudbrain path}/cloudbrain/publishers/sensor_publisher.py --mock -n openbci -i octopicorn -c localhost -p 99

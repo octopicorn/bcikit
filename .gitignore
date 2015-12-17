@@ -1,4 +1,5 @@
 .idea
+.idea/*
 .DS_Store
 
 # Created by .ignore support plugin (hsz.mobi)
@@ -20,7 +21,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/

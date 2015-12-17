@@ -8,7 +8,7 @@ def read(fname):
   path = os.path.join(os.path.dirname(__file__), fname)
   return open(path).read()
 
-setup(name="CloudbrainAnalysis",
+setup(name="bcikit",
       version="0.0.1",
       description="foo",
       packages=find_packages(),
