@@ -20,7 +20,7 @@ modules:
         message_queues: "eeg"
         message_type: "TIME_SAMPLE"
         data_type: "RAW_DATA"
-        buffer_size: 10
+        buffer_size: 16
 
 ###################################################################
   - id: "foo4"
@@ -29,7 +29,7 @@ modules:
       debug: False
       num_channels: 16
       samples_per_window: 500
-      window_overlap: 20
+      window_overlap: 16
     inputs:
       data:
         name: "eeg"
@@ -55,7 +55,7 @@ modules:
         data_type: "RAW_DATA"
     outputs:
       data:
-        message_queues: "window_coords"
+        message_queues: "eegd"
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0

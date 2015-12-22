@@ -55,7 +55,7 @@ python setup.py install
 ```
 
 ## Quickstart
-* make sure you have a device connector streaming live data with CloudBrain base install on your system
+* if you plan to use a device connector from CloudBrain, you can start that up first to begin streaming data
 (mock connector example given)
 ```
   python {cloudbrain path}/cloudbrain/publishers/sensor_publisher.py --mock -n openbci -i octopicorn -c localhost -p 99

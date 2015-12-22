@@ -27,23 +27,6 @@ modules:
         buffer_size: 10
 
 ###################################################################
-#  - id: "foo2"
-#    class: "ModuleSignalGenerator"
-#    settings:
-#      debug: False
-#      frequency: 3  # Hz (samples per second)
-#      num_channels: 1  # how many outputs to produce
-#      range: [-1,3]     # range of integers, (i.e. [1,10])
-#      pattern: "rand"   # rand | sine
-#    outputs:
-#      data:
-#        message_queues: "motor_class"
-#        message_type: "TIME_SAMPLE"
-#        data_type: "CLASS_LABELS"
-#        buffer_size: 1
-
-###################################################################
-#
   - id: "foo3"
     class: "ModuleWindows"
     settings:
@@ -62,28 +45,6 @@ modules:
         message_type: "MATRIX"
         data_type: "RAW_DATA"
         buffer_size: 0
-
-###################################################################
-#  - id: "foo4"
-#    class: "ModuleClassWindows"
-#    settings:
-#      debug: False
-#    inputs:
-#      data:
-#        name: "eeg2"
-#        message_type: "TIME_SAMPLE"
-#        data_type: "RAW_DATA"
-#      labels:
-#        name: "motor_class"
-#        message_type: "TIME_SAMPLE"
-#        data_type: "CLASS_LABELS"
-#    outputs:
-#      data:
-#        message_queues: ["motor_class_windows","viz1"]
-#        message_type: "MATRIX"
-#        data_type: "LABELED_DATA"
-#        buffer_size: 0
-
 ###################################################################
   - id: "foo5"
     class: "ModuleFFT"
@@ -103,56 +64,3 @@ modules:
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0
-
-###################################################################
-#  - id: "foo6"
-#    class: "ModuleConvert"
-#    settings:
-#      debug: False
-#    inputs:
-#      data:
-#        name: "window"
-#        message_type: "MATRIX"
-#        data_type: "RAW_DATA"
-#    outputs:
-#      data:
-#        message_queues: "window_coords"
-#        message_type: "MATRIX"
-#        data_type: "RAW_COORDS"
-#        buffer_size: 0
-
-###################################################################
-#  - id: "foo7"
-#    class: "ModuleDownsample"
-#    settings:
-#      formula: "lttb"
-#      percent: 50      # percentage of original data size to downsample to
-#      debug: False
-#    inputs:
-#      data:
-#        name: "window_coords"
-#        message_type: "MATRIX"
-#        data_type: "RAW_COORDS"
-#    outputs:
-#      data:
-#        message_queues: "eegd"
-#        message_type: "MATRIX"
-#        data_type: "RAW_COORDS"
-#        buffer_size: 0
-#
-###################################################################
-#  - id: "foo5"
-#    class: "ModuleTest"
-#    settings:
-#      debug: True
-#    inputs:
-#      data:
-#        name: "window"
-#        message_type: "MATRIX"
-#        data_type: "RAW_DATA"
-##    outputs:
-##      data:
-##        message_queues: "eeg3"
-##        message_type: "TIME_SAMPLE"
-##        data_type: "EEG_RAW"
-

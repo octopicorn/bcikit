@@ -1,67 +1,51 @@
-// Pipe - convenience wrapper to present data received from an
-// object supporting WebSocket API in an html element. And the other
-// direction: data typed into an input box shall be sent back.
-var pipe = function(ws, el_name) {
-    var el_id = '#'+el_name;
-    var $connectButton = $(el_id + ' .connect');
-    var $disconnectButton = $(el_id + ' .disconnect');
-    //ws.onopen    = function()  { console.log('websocket OPEN');}
+function initCharts(){
+	$.xVal = 0;
+	$.yVal = 0;
+	var dataLength = 500; // number of dataPoints visible at any point
+    $.dps = []; // dataPoints
+	$.numChannels = 16;
 
-    ws.onmessage = function(e) {
-        // get incoming data as json
-        var data = JSON.parse(e.data);
+	$.charts = [];
 
-		// use this when updating chart from a raw TIME_SAMPLE
-		//addPoint($.charts.plot1,data.channel_1);
+    // create the chart and save to global jquery scope
+	for(var i=0;i< $.numChannels;i++) {
+		$.charts[i] = new CanvasJS.Chart("chartContainer"+i, {
+			interactivityEnabled: false,
+			title: {
+				text: "Channel " + (i+1)
+			},
+			dataLength: dataLength,
+			axisX: {
+				minimum: 0,
+				maximum: dataLength,
+				interval: dataLength
+			},
+			axisY: {
+				minimum: -60,
+				maximum: 60
+			},
+			data: [{
+				type: "line",
+				lineThickness: 1,
+				color: "#FF0000",
+				dataPoints: $.dps
+			}]
+		});
 
-		// use this when updating chart from a ModuleWindows output
-		// addArray($.charts.plot1,data[0])
+		// generates first set of dataPoints
+		initChart($.charts[i], dataLength);
+	}
+	// keep the num of charts for easy for looping
+	$.numCharts = $.charts.length;
 
-		// use this when updating chart from a ModuleConvert (DTYPE_COORD) output
-		for(var i=0;i<$.numCharts;i++){
-			addCoords($.charts[i],data[i]);
-		}
+    // declare
+    var sockjs_url = '/echo';
+    var sockjs = new SockJS(sockjs_url);
 
-        //console.log(data[0])
-    }
-    //ws.onclose   = function()  { console.log('websocket CLOSED');};
-
-    $connectButton.on('click', function(e){
-        e.preventDefault();
-        // get selected metric from dropdown
-        var metric = $(el_id + ' .metricSelect').val();
-        var jsonRequest = JSON.stringify({
-            "type": "subscription",
-            "deviceName": "openbci",
-            "deviceId": "octopicorn",
-            "metric": metric,
-            "dataType": "MATRIX",
-            "rabbitmq_address":"127.0.0.1"
-        });
-        ws.send(jsonRequest);
-        console.log('subscribed: '+ metric);
-        $connectButton.addClass('hidden');
-        $disconnectButton.removeClass('hidden');
-    });
-
-    $disconnectButton.on('click', function(e){
-        e.preventDefault();
-        // get selected metric from dropdown
-        var metric = $(el_id + ' .metricSelect').val();
-        var jsonRequest = JSON.stringify({
-            "type": "unsubscription",
-            "deviceName": "openbci",
-            "deviceId": "octopicorn",
-            "metric": metric,
-            "dataType": "MATRIX",
-            "rabbitmq_address":"127.0.0.1"
-        });
-        ws.send(jsonRequest);
-        console.log('unsubscribed: '+ metric);
-        $disconnectButton.addClass('hidden');
-        $connectButton.removeClass('hidden');
-    });
-};
+    var multiplexer = new MultiplexedWebSocket(sockjs);
+    var ann  = multiplexer.channel('ann');
+    pipe(ann,  'first');
+}
 
 // random value generator
 function getNewData(){
@@ -134,53 +118,3 @@ var addPoint = function ($chart, value) {
 };
 
 
-$(document).ready(function(){
-
-	$.xVal = 0;
-	$.yVal = 0;
-	var dataLength = 500; // number of dataPoints visible at any point
-    $.dps = []; // dataPoints
-	$.numChannels = 16;
-
-	$.charts = [];
-
-    // create the chart and save to global jquery scope
-	for(var i=0;i< $.numChannels;i++) {
-		$.charts[i] = new CanvasJS.Chart("chartContainer"+i, {
-			interactivityEnabled: false,
-			title: {
-				text: "Channel " + (i+1)
-			},
-			dataLength: dataLength,
-			axisX: {
-				minimum: 0,
-				maximum: dataLength,
-				interval: dataLength
-			},
-			axisY: {
-				minimum: -60,
-				maximum: 60
-			},
-			data: [{
-				type: "line",
-				dataPoints: $.dps
-			}]
-		});
-
-		// generates first set of dataPoints
-		initChart($.charts[i], dataLength);
-	}
-	// keep the num of charts for easy for looping
-	$.numCharts = $.charts.length;
-
-    // declare
-    var sockjs_url = '/echo';
-    var sockjs = new SockJS(sockjs_url);
-
-    var multiplexer = new MultiplexedWebSocket(sockjs);
-    var ann  = multiplexer.channel('ann');
-    pipe(ann,  'first');
-
-
-
-});

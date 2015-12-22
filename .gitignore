@@ -1,6 +1,6 @@
 .idea
-.idea/*
 .DS_Store
+bcikit.egg-info
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template

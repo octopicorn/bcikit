@@ -90,7 +90,9 @@ class ModuleSignalGenerator(ModuleAbstract):
         sleep_length = 1 # default to 1 sec delay
         if self.sampling_rate:
             # how many fractions of 1 whole second? that is how long we will sleep
-            sleep_length = (1. / float(self.sampling_rate))
+            sleep_length = (1. / float(self.sampling_rate * 2))
+            print "********* sampling rate: " + str(self.sampling_rate)
+            print "********* sleep length: " + str(sleep_length)
 
         while(True):
             # get message by whatever pattern has been specified

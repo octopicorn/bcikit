@@ -13,7 +13,7 @@ Chart.prototype.tid = null;
 
 // globals
 // set default window dimensions
-var defaultDataLength = 100;
+var defaultDataLength = 500;
 var defaultData = [];
 var defaultLabels = [];
 for(var i=0;i<defaultDataLength;i++){

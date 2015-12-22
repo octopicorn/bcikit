@@ -64,7 +64,6 @@ var Channel = function(ws, name, channels) {
     this.name = name;
     this.channels = channels;
     var onopen = function() {
-        console.log('opened '+that.name)
         that.ws.send('sub,' + that.name);
         that.emit('open');
     };
