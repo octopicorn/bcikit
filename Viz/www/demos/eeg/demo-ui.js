@@ -5,26 +5,40 @@ var pipe = function(ws, el_name) {
     var el_id = '#'+el_name;
     var $connectButton = $(el_id + ' .connect');
     var $disconnectButton = $(el_id + ' .disconnect');
-    //ws.onopen    = function()  { console.log('websocket OPEN');}
+    ws.onopen    = function()  { console.log('websocket OPEN');}
+    ws.onclose   = function()  { console.log('websocket CLOSED');};
 
     ws.onmessage = function(e) {
         // get incoming data as json
         var data = JSON.parse(e.data);
 
-		// use this when updating chart from a raw TIME_SAMPLE
-		//addPoint($.charts.plot1,data.channel_1);
-
-		// use this when updating chart from a ModuleWindows output
-		// addArray($.charts.plot1,data[0])
-
-		// use this when updating chart from a ModuleConvert (DTYPE_COORD) output
-		for(var i=0;i<$.numCharts;i++){
-			addCoords($.charts[i],data[i]);
-		}
-
-        //console.log(data[0])
+        if(data['type'] && data['type'] == 'handshake'){
+            //console.log("incoming handshake from server");
+            //console.log(data)
+            updateMetricsDropDown(data.metrics)
+        } else {
+            // incoming plot data
+            for(var i=0;i<$.numChannels;i++){
+                addCoordsWindow(i,data[i]);
+            }
+        }
     }
-    //ws.onclose   = function()  { console.log('websocket CLOSED');};
+
+    var updateMetricsDropDown = function(metrics){
+        // get the <select> element
+        $metrics = $(el_id + ' .metricSelect');
+        // remove all options
+        $metrics
+            .find('option')
+            .remove();
+        // append the incoming metrics from the handshake
+        for (i in metrics){
+            $metrics
+                .append('<option value="' + metrics[i] + '">'+metrics[i]+'</option>');
+        }
+        // make the metrics/connect display visible
+        $(el_id).removeClass('hidden');
+    }
 
     $connectButton.on('click', function(e){
         e.preventDefault();
@@ -38,8 +52,8 @@ var pipe = function(ws, el_name) {
             "dataType": "MATRIX",
             "rabbitmq_address":"127.0.0.1"
         });
-        ws.send(jsonRequest);
-        console.log('subscribed: '+ metric);
+        var foo = ws.send(jsonRequest);
+        console.log('subscribed to metric: '+ metric);
         $connectButton.addClass('hidden');
         $disconnectButton.removeClass('hidden');
     });
@@ -63,14 +77,16 @@ var pipe = function(ws, el_name) {
     });
 };
 
-var colors = [
-'#ffcc00',
-'#ff6600',
-'#00ff00',
-'#EA5532',
+
+
+var chartColors = [
 '#ff0000',
 '#00ccff',
 '#66ff00',
+'#228800',
+'#ff6600',
+'#00ff00',
+'#EA5532',
 '#6600ff',
 '#B72F8C',
 '#00ff66',
@@ -182,11 +198,62 @@ function randomColors(total)
     return r;
 }
 
+function openPipe(){
+    // declare
+    var sockjs_url = '/echo';
+    var sockjs = new SockJS(sockjs_url);
+
+    var multiplexer = new MultiplexedWebSocket(sockjs);
+    var ann  = multiplexer.channel('ann');
+    pipe(ann,  'first');
+}
+
+// random value generator (pick between -10 and 10)
+function getNewData(channel_index){
+    //channel_index = channel_index || 0;
+    // add the offset specific to the channel to the random value
+    // for example, if it's channel 3, we will add offset * (3+1)
+    return Math.floor(Math.random() * 91) - 50; // + ($.offsetPerChannel * (channel_index+1));
+}
+
+function initCharts(){
+    drawCharts();
+    openPipe();
+}
+
 $(document).ready(function(){
-    foo = randomColors(16);
-    for(i in foo){
-        console.log("color: " + foo[i]);
-    }
-    initCharts();
+    //foo = randomColors(16);
+    //for(i in foo){
+    //    console.log("color: " + foo[i]);
+    //}
+
+    $.testmode = 'continuous';
+    $.charts = [];
+    $.dataLength = parseInt($('#dataLength').val());
+    $.offsetPerChannel = 0;
+    $.numChannels = 1;
+
+    // bind numChannels dropdown
+    $('#numChannelsSelect').change(function(){
+        $.numChannels = parseInt($(this).val());
+        initCharts();
+    });
+
+
+    // bind testmode
+    $('input[type=radio][name=testmode]').on('change',function(){
+        $.testmode = $(this).val();
+        initCharts();
+    });
+
+    // bind datalength
+    $('#dataLength').on('change', function(e){
+        // update datalength global
+        $.dataLength = parseInt($(this).val());
+        // if chart is drawn already, re-initialize it
+        if($('#numChannelsSelect').val() != ''){
+            initCharts();
+        }
+    });
 
 });

@@ -146,3 +146,26 @@ def MatrixToCoords(input, typeSafe=False):
         col = col+1
 
     return output
+
+def ListConfOutputMetrics(conf):
+    """
+    'modules': [
+        {
+            'outputs': {
+                'data': {
+                    'buffer_size': 0, 'message_queues': 'eeg', 'message_type': 'TIME_SAMPLE', 'data_type': 'RAW_DATA'
+                }
+            },
+            'class': 'ModuleSignalGenerator', 'id': 'foo1', 'settings': {'range': [-40, 40], 'num_channels': 16, 'frequency': 10, 'sampling_rate': 250, 'debug': False, 'pattern': 'sine'}}, {'inputs': {'data': {'message_type': 'TIME_SAMPLE', 'name': 'eeg', 'data_type': 'RAW_DATA'}}, 'class': 'ModuleWindows', 'id': 'foo4', 'outputs': {'data': {'buffer_size': 0, 'message_queues': 'viz_window', 'message_type': 'MATRIX', 'data_type': 'RAW_DATA'}}, 'settings': {'debug': False, 'samples_per_window': 21, 'num_channels': 16, 'window_overlap': 0}}, {'inputs': {'data': {'message_type': 'MATRIX', 'name': 'viz_window', 'data_type': 'RAW_DATA'}}, 'class': 'ModuleConvert', 'id': 'foo6', 'outputs': {'data': {'buffer_size': 0, 'message_queues': 'viz_eeg', 'message_type': 'MATRIX', 'data_type': 'RAW_COORDS'}}, 'settings': {'debug': False, 'num_channels': 16}}]}
+    """
+    metrics = []
+    for module in conf['modules']:
+        if 'outputs' in module and 'data' in module['outputs']:
+            if 'message_queues' in module['outputs']['data']:
+                if type(module['outputs']['data']['message_queues']) == str:
+                    metrics.append(module['outputs']['data']['message_queues'])
+                elif type(module['outputs']['data']['message_queues']) == list:
+                    for metric in module['outputs']['data']['message_queues']:
+                        metrics.append(metric)
+
+    return metrics

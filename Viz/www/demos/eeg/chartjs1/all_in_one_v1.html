@@ -1,0 +1,252 @@
+<!doctype html>
+<html><head>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+<head>
+<body lang="en">
+    <h4>EEG Demo with <a href="https://github.com/nnnick/Chart.js" target="_blank">Chart.js</a> (1.0)</h4>
+
+    <!-- metric channel container -->
+    <div id="first" class="box chartContainer">
+        <b>data generated: </b><input type="radio" name="testmode" value="marker" checked="checked" /> test mode
+        <input type="radio" name="testmode" value="random" /> random<br/><br/>
+        # datapoints: <input type="text" id="dataLength" value="250" size="4"/><br/>
+        # operations per second: <input type="text" id="fps" value="24" size="4"/> <br/><br/>
+        <b>Operation means:</b>
+        <input type="radio" name="redrawFunc" value="randomUpdate" checked="checked" /> redraw entire chart
+        <input type="radio" name="redrawFunc" value="randomUpdateSingle" /> add single points from buffer of 10 (like in rt_server)
+        <br/>
+        <select id="numChannelsSelect">
+            <option value=""># of channels</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+        </select>
+        <!-- connection buttons -->
+        <button id="connect" class="connect">connect</button>
+        <button id="disconnect" class="disconnect">disconnect</button>
+    </div>
+    <!-- -->
+
+    <div class="demo-container">
+        <!-- canvas -->
+        <canvas id="chartContainer0"></canvas>
+    </div>
+
+    <script type="text/javascript">
+// random value generator (pick between -10 and 10)
+function getNewData(channel_index){
+    channel_index = channel_index || 0;
+    // add the offset specific to the channel to the random value
+    // for example, if it's channel 3, we will add offset * (3+1)
+    return Math.floor(Math.random() * 21) - 10 + ($.offsetPerChannel * (channel_index+1));
+}
+
+// update all charts with 10 new random values
+var randomUpdate = function(){
+    for(var i=0;i< $.numChannels;i++) {
+        // new set of points with 10 old ones shifted off, and 10 new ones added
+        // (simulating window with overlap 10 coming from websocket)
+        for (var p = 0; p < $.dataLength; p++) {
+            if(p < $.dataLength - 10){
+                // shift old points 10 back
+                $.charts[0].datasets[i].points[p]['value'] = $.charts[0].datasets[i].points[(p+10)]['value'];
+            } else {
+                // last 10 get new values randomly
+                if($.testmode=='marker'){
+                    // in testmode=marker, we keep the line flat so we can see how fast marker moves
+                    $.charts[0].datasets[i].points[p]['value'] = ($.offsetPerChannel * (i+1));
+                } else {
+                    // otherwise, get random new data
+                    $.charts[0].datasets[i].points[p]['value'] = getNewData(i);
+                }
+
+
+            }
+        }
+    }
+    $.charts[0].update();
+}
+
+/*
+add one new random point to each dataset
+ */
+var randomUpdateSingle = function(){
+    // default buffer size = 10
+    // loop through each buffer size (each buffer simulates one json packet of channel data)
+    for (var j=0;j<$.simulatedBufferSize;j++) {
+        // for each buffer, add all the channel points
+        var newData = [];
+        // add one new point for each dataset (passing in the channel index for the offset)
+        for (var i = 0; i < $.numChannels; i++) {
+            newData.push(getNewData(i));
+        }
+        // data is added with one point for all datasets at once
+        // see reference for .addData() method here: http://www.chartjs.org/docs/#line-chart-prototype-methods
+        $.charts[0].removeData(); // remove one (same as calling array.shift() on each dataset.points)
+        $.charts[0].addData(newData, ""); // add one
+    }
+}
+
+var initRandomData = function(){
+    var data = {
+        labels: [],
+        datasets: []
+    };
+
+
+    // init as many blank datasets as needed
+    for(var i=0;i< $.numChannels;i++){
+        data.datasets.push({
+            label: "",
+            data: [],
+            strokeColor:"rgba(0,0,0,1)"
+         });
+    }
+
+    // generate as many random points as needed to fill the graph
+    for(var i=0;i< $.numChannels;i++){
+        for(var k=0;k<$.dataLength;k++){
+            if($.testmode=='marker' && k < ($.dataLength-10)){
+                data.datasets[i].data.push(($.offsetPerChannel * (i+1)));
+            } else {
+                data.datasets[i].data.push(getNewData(i));
+            }
+
+
+            if(i===0){
+                data.labels.push("");
+            }
+        }
+    }
+    return data;
+}
+
+var initCharts = function(){
+
+    var config = {
+        pointDot: false,
+        bezierCurve: false,
+        datasetFill:false,
+        datasetStroke : true,
+        datasetStrokeWidth : 1
+    };
+
+    // instantiate chart
+    var ctx = document.getElementById("chartContainer0").getContext("2d");
+    $.charts[0] = new Chart(ctx).Line(initRandomData(), config);
+}
+
+$(document).ready(function(){
+    $.testmode = 'marker'
+    $.redrawFunc = randomUpdate;
+    $.charts = [];
+    $.simulatedBufferSize = 1;
+    $.dataLength = $('#dataLength').val();
+    $.tid = null;
+    $.offsetPerChannel = 100;
+
+    // make the dots go away
+    // make the lines non-bezier curved
+    Chart.defaults.global.animation = false;
+    Chart.defaults.global.showScale = true;
+    Chart.defaults.global.scaleOverride = true;
+    Chart.defaults.global.scaleLineWidth = 1;
+    Chart.defaults.global.scaleShowGridLines = true;
+    Chart.defaults.global.scaleGridLineColor = "rgba(0,0,0,1)";
+    Chart.defaults.global.scaleGridLineWidth = 1;
+    Chart.defaults.global.showTooltips = false;
+    Chart.defaults.global.tooltipEvents = [];
+    Chart.defaults.global.bezierCurve = false;
+    Chart.defaults.global.bezierCurveTension = 0;
+    Chart.defaults.global.pointDot = false;
+    Chart.defaults.global.pointDotRadius = 0;
+    Chart.defaults.global.datasetFill = false;
+    Chart.defaults.global.datasetStrokeWidth = 1;
+    Chart.defaults.global.responsive = true;
+    Chart.defaults.global.events = [];
+
+    $('#numChannelsSelect').change(function(){
+        $.numChannels = $(this).val();
+
+        // y-axis labels
+        // number of ticks
+        Chart.defaults.global.scaleSteps = parseInt($.numChannels);
+        // how big is space between each tick
+        Chart.defaults.global.scaleStepWidth = $.offsetPerChannel;
+        // starting value
+        Chart.defaults.global.scaleStartValue = $.offsetPerChannel/2;
+        initCharts();
+    });
+
+    // bind connect button
+    $('#connect').on('click', function(e){
+        if($.numChannels != "") {
+            var fps = $('#fps').val();
+
+            $('#disconnect').show();
+            $('#connect').hide();
+            e.preventDefault();
+            var timeToSleep = parseInt(1000 / parseInt(fps));
+            console.log('connect: looping at ' + fps + ' times per sec. will sleep ' + timeToSleep + ' msec between each loop');
+            $.tid = setInterval($.redrawFunc, timeToSleep);
+        }
+    });
+
+    // bind disconnect
+    $('#disconnect').on('click', function(e){
+        console.log('disconnect')
+        $('#connect').show();
+        $('#disconnect').hide();
+        e.preventDefault();
+        clearInterval($.tid);
+    });
+
+    // bind testmode
+    $('input[type=radio][name=testmode]').on('change',function(){
+        $.testmode = $(this).val();
+        initCharts();
+    });
+
+    // bind redraw method
+    $('input[type=radio][name=redrawFunc]').on('change',function(){
+        if($(this).val()=='randomUpdate'){
+            $.redrawFunc = randomUpdate;
+            $('#fps').val(24);
+        } else {
+            $.redrawFunc = randomUpdateSingle;
+            $('#fps').val(1000);
+        }
+    });
+
+    // bind datalength
+    $('#dataLength').on('change', function(e){
+        // update datalength global
+        $.dataLength = $(this).val();
+        // if chart is drawn already, re-initialize it
+        if($('#numChannelsSelect').val() != ''){
+            initCharts();
+        }
+    });
+
+
+});
+
+
+    </script>
+</body></html>
+
+

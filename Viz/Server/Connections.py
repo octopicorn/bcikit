@@ -18,7 +18,7 @@ from sockjs.tornado.conn import SockJSConnection
 from cloudbrain.settings import RABBITMQ_ADDRESS
 
 from TornadoSubscriber import TornadoSubscriber
-from lib.utils import BufferToMatrix
+from lib.utils import BufferToMatrix, ListConfOutputMetrics
 from lib.constants import *
 
 
@@ -28,6 +28,7 @@ class ConnectionPlot(SockJSConnection):
     """RtStreamConnection connection implementation"""
     # Class level variable
     clients = set()
+    conf = None
 
     def __init__(self, session):
         super(self.__class__, self).__init__(session)
@@ -62,7 +63,15 @@ class ConnectionPlot(SockJSConnection):
 
     def on_open(self, info):
         logging.info("Got a new connection...")
+        # debug
+        print "[Tornado Server: ConnectionPlot] opened websocket connection"
         self.clients.add(self)
+        metrics = ListConfOutputMetrics(self.conf)
+        #print metrics
+
+        # send the handshake to the clients
+        menu = {"type":"handshake","metrics":metrics}
+        self.send(json.dumps(menu))
 
 
     def on_message(self, message):
@@ -125,12 +134,14 @@ class ConnectionPlot(SockJSConnection):
         self.broadcast(self.clients, 'message')
 
 """
-This connection type is meant to handle class label tags coming from the, and routs them back to server
+This connection type is meant to handle class label tags coming from the frontend UI, and routes them back to server
 """
 class ConnectionClassLabel(SockJSConnection):
     """
     Connection to collect class labels
     """
+    conf = None
+
     def on_open(self, info):
         self.send('ClassLabel Connection established: server will begin receiving data.')
 
