@@ -54,7 +54,29 @@ Choice B: you plan to only use this as third-party tool
 python setup.py install
 ```
 
-## Quickstart
+## Quickstart: Run Analysis and Visualization in One Call
+Sometimes, you might prefer to start/stop the AnalysisService.py and VisualizationServer.py in their own separate 
+terminal window, and this is supported.  However, for convenience, most people will want to start/stop both at once.
+You can start both processes by a script at root dir called "run.py"
+```
+python {path-to-bcikit}/run.py  -i octopicorn -d openbci -c ../Viz/www/demos/eeg/viz_eeg.yml
+```
+
+Parameters to run.py are as follows:
+
+| short        | verbose           | required  | description    |
+| :----------- |:------------------|:----------|:---------------|
+|-i|--device_id|Yes|A unique ID to identify the device you are sending data from. For example: 'octopicorn2015'.|
+|-d|--device_name|Yes|The name of the device your are sending data from. Supported devices are: openbci, muse. Must be used even if you're using SignalGenerator with no actual device connected (device specs are needed even for mock data).|
+|-q|--mq_host|No (default=**localhost**)|The address of the RabbitMQ message queue you are sending data to. Use 'localhost' if running locally, or cloudbrain.rocks for CloudBrain's hosted service.|
+|-c|--conf_path|No (default=**AnalysisModules/conf.yml**)|Path to your configuration .yml file (relative to the AnalysisModules/ directory)|
+
+In the future, run.py will likely be the preferred method to run bcikit, since visualization and analysis will share 
+certain startup variables and conf file.
+
+
+
+## Quickstart Alternative: Run CloudBrain independently of AnalysisModules and VisualizationServer (2 terminal windows) 
 * if you plan to use a device connector from CloudBrain, you can start that up first to begin streaming data
 (mock connector example given)
 ```
@@ -63,7 +85,7 @@ python setup.py install
 * Start both Analysis and Visualization by a single convenience script at root dir called "run.py" (should be started
 with the same device id, name, rabbitmq params as above)
 ```
-  python {CloudbrainAnalysis path}/run.py -i octopicorn -c localhost -n openbci
+  python {bcikit path}/run.py -i octopicorn -c localhost -n openbci
 ```
 * Point your web browser to http://localhost:9999/index.html - Currently the eeg/flot is the only demo working
 * Ctrl-C to stop analysis process & viz server
@@ -74,14 +96,21 @@ module blocks to turn them on or off. Set debug to True to see live output from 
 In the folder "AnalysisModules", find the conf.yml.  This file is used to set a processing chain of analysis modules,
 defining the order, names of input and output metrics, and any special params used by each module.
 
-For now, the only modules defined are "Windows", "Downsample" and "Test".  It is up to the user to make sure that,
-if one module follows another, that module 1 output is compatible with module 2 input.  For example, if a module is
-expecting scalar input, don't put a module that emits matrices in front of it.
+For now, the defined analysis modules include:
+- ModuleSignalGenerator (generate mock data, either random or sine wave) 
+- ModuleWindows (collect raw data into rolling windows/matrices of fixed size, with optional overlap)
+- ModuleClassWindows (collect raw data + class labels into rolling windows/matrices of variable size, grouped by class label, no overlap)
+- ModuleConvert (conversions, example: convert matrix of raw data to coordinate pairs (x,y) - used for plotting) 
+- ModuleDownsample (decrease number of points while still retaining essential features of graph, used for plotting only)
+- ModuleTest (used as a template for new modules)
+
+It is up to the user to make sure that, if one module follows another, that module 1 output is compatible with module 2 
+input.  For example, if a module is expecting scalar input, don't have its input connected to output from a module that 
+emits matrices.
 
 Some limitations to be aware of:
 - only works with openbci device type for now
-- only 1 input and 1 output per module for now. input is required, output is optional.
-- the config vars 'input_feature' and 'output_feature' define metric names to read/write on rabbitmq
+- the config vars **inputs > data > message_queues** and **inputs > data > message_queues** define metric names to read/write on rabbitmq
 - only rabbitmq is supported, not pipes
 - there are some random things hardcoded
 
@@ -113,7 +142,7 @@ The visualizations run using a tornado server copying the pattern used in cloudb
 The server was modified to use the "multiplex" capability, so that we are not limited to one connection per window. This
 was modelled after a sockjs example found here:
 https://github.com/mrjoes/sockjs-tornado/tree/master/examples/multiplex
-That is why there is reference to "ann" and "bob".  The server is defined in server.py.
+That is why there is reference to "ann" and "bob".  The server is defined in **Viz/VisualizationServer.py**.
 
 The tornado server just passes through all get requests to their relative location based on the "www" folder as root.
 That is why all the visualization code is presently stuffed into the folder "Multiplex".
@@ -126,8 +155,18 @@ meant for the javascript frontend to actually send data back to cludbrain via we
 The idea here is that the frontend visualization will require the capability to show some UI to the user meant for
 training (or calibration) sessions, in which capturing class label tag is critical.
 
-The current limitations are so many it's not wort listing out.  Only basic eeg and downsampled eeg ("eegd") has been
-worked on.  Only the flot example works, though the chartjs examples should be close.
+The current limitations are so many it's not worth listing out.  Only outputs of type (message_type: "MATRIX", 
+data_type: "RAW_COORDS") are supported in any of the visualization demos, so that means the only outputs that can be 
+charted must come from either ModuleConvert or ModuleDownsample.  
+
+Different libraries perform differently in different browsers.  Overall, Canvas.js library has (so far) shown the best 
+performance, as seen here: [http://jsperf.com/amcharts-vs-highcharts-vs-canvasjs/16].  For optimal performance, we 
+recommend the latest Chrome browser + Canvas.js.  Although Canvas.js was shown to have excellent performance in 
+static drawing benchmarks in Safari (at the above link), in real-world tests of dynamic drawing (i.e. live streaming), 
+Safari is very choppy and laggy.
+
+Pro-tip: In Chrome you can turn on an FPS clock, which will help to measure real performance and visualize GPU memory 
+usage. Go to chrome://flags and turn on **FPS counter**
 
 ## Visualizations Demo
 1. assuming you're running a mock connector as specified in step 1 above, you can start your server by
@@ -141,27 +180,6 @@ http://localhost:9999/index.html
 
 3. the "eeg" metric should work if you have mock connector streaming.  The basic idea is that you pick the metric you
 want to see and click "connect" to start streaming it.  The actual websocket connection is opened when the page loads.
-
-
-## Run Analysis and Visualization in One Call
-Sometimes, you might prefer to start/stop the AnalysisService.py and VisualizationServer.py in their own separate 
-terminal window, and this is supported.  However, for convenience, most people will want to start/stop both at once.
-You can start both processes by a script at root dir called "run.py"
-```
-python {path-to-bcikit}/run.py  -i octopicorn -d openbci -c ../Viz/www/demos/eeg/viz_eeg.yml
-```
-
-Parameters to run.py are as follows:
-
-| short        | verbose           | required  | description    |
-| :----------- |:------------------|:----------|:---------------|
-|-i|--device_id|Yes|A unique ID to identify the device you are sending data from. For example: 'octopicorn2015'"|
-|-d|--device_name|Yes|"The name of the device your are sending data from. Supported devices are: openbci, muse|
-|-q|--mq_host|No (default=**localhost**)|The address of the RabbitMQ message queue you are sending data to. Use 'localhost' if running locally, or cloudbrain.rocks for CloudBrain's hosted service.|
-|-c|--conf_path|No (default=**AnalysisModules/conf.yml**)|Path to your configuration .yml file (relative to the AnalysisModules/ directory)|
-
-In the future, run.py will likely be the preferred method to run bcikit, since visualization and analysis will share 
-certain startup variables and conf file.
 
 
 ## Data Representation
