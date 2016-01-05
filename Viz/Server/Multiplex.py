@@ -40,7 +40,13 @@ class DummyHandler(base.BaseTransportMixin):
 class MultiplexConnection(conn.SockJSConnection):
     channels = dict()
 
+    @classmethod
+    def set_conf(self, conf):
+        for channel_name, chan in self.channels.iteritems():
+            chan.conf = conf
+
     def on_open(self, info):
+        print "MultiplexConnection OPEN"
         self.endpoints = dict()
         self.handler = DummyHandler(self.session.conn_info)
 
@@ -76,4 +82,4 @@ class MultiplexConnection(conn.SockJSConnection):
 
     @classmethod
     def get(cls, **kwargs):
-        return type('MultiplexRouter', (MultiplexConnection,), dict(channels=kwargs))
+        return type('MultiplexRouter', (MultiplexConnection,), dict(channels=kwargs, conf="foo"))

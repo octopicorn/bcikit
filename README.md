@@ -55,7 +55,7 @@ python setup.py install
 ```
 
 ## Quickstart
-* make sure you have a device connector streaming live data with CloudBrain base install on your system
+* if you plan to use a device connector from CloudBrain, you can start that up first to begin streaming data
 (mock connector example given)
 ```
   python {cloudbrain path}/cloudbrain/publishers/sensor_publisher.py --mock -n openbci -i octopicorn -c localhost -p 99
@@ -139,8 +139,7 @@ python {CloudbrainAnalysis path}/Viz/VisualizationServer.py
 http://localhost:9999/index.html
 (only working demo for now is the flot eeg)
 
-3. the "eeg" metric should work if you have mock connector streaming.  if you also have analysis modules running, with
-the downsample module output, then the "eegd" metric should work as well.  The basic idea is that you pick the metric you
+3. the "eeg" metric should work if you have mock connector streaming.  The basic idea is that you pick the metric you
 want to see and click "connect" to start streaming it.  The actual websocket connection is opened when the page loads.
 
 
@@ -149,11 +148,20 @@ Sometimes, you might prefer to start/stop the AnalysisService.py and Visualizati
 terminal window, and this is supported.  However, for convenience, most people will want to start/stop both at once.
 You can start both processes by a script at root dir called "run.py"
 ```
-python {CloudbrainAnalysis path}/run.py -i octopicorn -c localhost -n openbci
+python {path-to-bcikit}/run.py  -i octopicorn -d openbci -c ../Viz/www/demos/eeg/viz_eeg.yml
 ```
-In the future, this will likely be the preferred method, since visualization and analysis will share certain startup
-variables, like *device name* and *device id*, not to mention, they will probably also be pulling from a common config 
-file. At present, the config file **conf.yml** is only used in the AnalysisModules folder.
+
+Parameters to run.py are as follows:
+
+| short        | verbose           | required  | description    |
+| :----------- |:------------------|:----------|:---------------|
+|-i|--device_id|Yes|A unique ID to identify the device you are sending data from. For example: 'octopicorn2015'"|
+|-d|--device_name|Yes|"The name of the device your are sending data from. Supported devices are: openbci, muse|
+|-q|--mq_host|No (default=**localhost**)|The address of the RabbitMQ message queue you are sending data to. Use 'localhost' if running locally, or cloudbrain.rocks for CloudBrain's hosted service.|
+|-c|--conf_path|No (default=**AnalysisModules/conf.yml**)|Path to your configuration .yml file (relative to the AnalysisModules/ directory)|
+
+In the future, run.py will likely be the preferred method to run bcikit, since visualization and analysis will share 
+certain startup variables and conf file.
 
 
 ## Data Representation
@@ -278,8 +286,6 @@ print window[1,:2]
 - establish a convention for modules to specify what kinds of visualization they are compatible with.
 - establish a convention whereby, if any module in configuration has specified a visualization component, the
 visualization server will be auto-started
-- conf.yml should be default only, but can be overriden by incoming command line option
-- conf.yml should be used by both analysis and viz server
 
 ### Metrics To Be Implemented
 - Bandpass Filter (High, Low)

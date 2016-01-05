@@ -54,7 +54,7 @@ def run(device_name='muse',
 
     # start visualization server in a separate subprocess
     # has to be done in a subprocess because server is a blocking, infinite loop
-    vizServer = VisualizationServer(debug=True)
+    vizServer = VisualizationServer(debug=True, conf_path=conf_path)
     p1 = Process(target=vizServer.start)
     p1.daemon = True
     p1.start()

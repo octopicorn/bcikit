@@ -91,7 +91,6 @@ class ModuleAbstract(object):
         # if input, instantiate subscriber
         if len(self.inputs):
             # there is only one subscriber to handle all inputs
-            print self.LOGNAME + "subscribing to " + str(self.inputs)
             self.subscriber = PikaSubscriber(device_name=self.device_name,
                                                      device_id=self.device_id,
                                                      rabbitmq_address=self.rabbitmq_address,

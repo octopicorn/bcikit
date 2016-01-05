@@ -4,54 +4,18 @@
 
     <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
     <script src="/lib/sockjs/sockjs.min.js"></script><!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
-    <script src="/lib/chart.js.2/Chart.min.js"></script>
-    <script src="./eeg-chartjs-2.js"></script>
+    <script src="/lib/chart.js.2.dev/Chart.min.js"></script>
+
     <script src="/multiplex.js"></script>
-    <style>
-        .hidden { display: none;}
-      .box {
-          width: 300px;
-          float: left;
-          margin: 0 20px 0 20px;
-      }
-      .box div, .box input {
-          border: 1px solid;
-          -moz-border-radius: 4px;
-          border-radius: 4px;
-          width: 100%;
-          padding: 0px;
-          margin: 5px;
-      }
-      .box div {
-          border-color: grey;
-          height: 300px;
-          overflow: auto;
-      }
-      .box input {
-          height: 30px;
-      }
-      h1 {
-          margin-left: 75px;
-      }
-      body {
-          background-color: #F0F0F0;
-          font-family: "Arial";
-      }
-    </style>
 <head>
 <body lang="en">
-    <!--<h1>Multiplex visualizer</h1>-->
-
-    <div class="demo-container">
-        <!-- canvas -->
-        <canvas id="placeholder" class="demo-placeholder" width="1400" height="300"></canvas>
-    </div>
+    <h5><a href="/">Back</a></h5>
+    <h4>EEG Demo with <a href="https://github.com/nnnick/Chart.js" target="_blank">Chart.js</a></h4>
 
     <!-- metric channel container -->
     <div id="first" class="box chartContainer">
         <select class="metricSelect">
-            <option value="eeg" selected="selected">eeg</option>
-            <option value="eegd" >eegd</option>
+            <option value="viz_eeg" selected="selected">viz_eeg</option>
         </select>
         <!-- connection buttons -->
         <button class="connect">connect</button>
@@ -60,6 +24,28 @@
     </div>
     <!-- -->
 
+    <div class="demo-container">
+        <!-- canvas -->
+        <canvas id="chartContainer0" width="923" height="100"></canvas>
+        <canvas id="chartContainer1" width="923" height="100"></canvas>
+        <canvas id="chartContainer2" width="923" height="100"></canvas>
+        <canvas id="chartContainer3" width="923" height="100"></canvas>
+        <canvas id="chartContainer4" width="923" height="100"></canvas>
+        <canvas id="chartContainer5" width="923" height="100"></canvas>
+        <canvas id="chartContainer6" width="923" height="100"></canvas>
+        <canvas id="chartContainer7" width="923" height="100"></canvas>
+        <canvas id="chartContainer8" width="923" height="100"></canvas>
+        <canvas id="chartContainer9" width="923" height="100"></canvas>
+        <canvas id="chartContainer10" width="923" height="100"></canvas>
+        <canvas id="chartContainer11" width="923" height="100"></canvas>
+        <canvas id="chartContainer12" width="923" height="100"></canvas>
+        <canvas id="chartContainer13" width="923" height="100"></canvas>
+        <canvas id="chartContainer14" width="923" height="100"></canvas>
+        <canvas id="chartContainer15" width="923" height="100"></canvas>
+    </div>
+
+
+    <script src="./eeg-chartjs-2.js"></script>
     <script type="text/javascript">
 
 

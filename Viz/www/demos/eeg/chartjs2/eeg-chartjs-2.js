@@ -3,132 +3,13 @@ function getNewData(){
     return Math.floor(Math.random() * 21) - 10;
 }
 
-// globals
-// set default window dimensions
-var defaultDataLength = 1000;
-var defaultData = [];
-var defaultLabels = [];
-for(var i=0;i<defaultDataLength;i++){
-  defaultData.push(getNewData());
-  defaultLabels.push(getNewData());
-}
-
-
-var config = {
-    type: 'line',
-    data: {
-        labels: defaultLabels,
-        datasets: [{
-            label: "My First dataset",
-            data: defaultData,
-            fill: true,
-        }]
-    },
-    options: {
-
-        scales: {
-            xAxes: [{
-              display: true,
-                gridlines: {
-                    display:false,
-                    drawTicks: false,
-                    lineWidth: 0.5
-                },
-              ticks: {
-                  userCallback: function(dataLabel, index) {
-                      return '';
-                      //return index % 2 === 0 ? dataLabel : '';
-                  }
-              }
-            }],
-            yAxes: [{
-                gridlines: {
-                    display:false,
-                    drawTicks: false,
-                    lineWidth: 0.5
-                },
-              display: true,
-              ticks: {
-                  display: false,
-                  suggestedMin: -60,
-                  suggestedMax: 60
-
-              }
-            }]
-        },
-        responsive: false,
-        responsiveAnimationDuration: 0,
-        animation: {
-            duration: 0,
-            easing: "easeOutQuart",
-            onProgress: function() {},
-            onComplete: function() {},
-        },
-        line: {
-            tension: 0,
-            backgroundColor: Chart.defaults.global.defaultColor,
-            borderWidth: 0,
-            borderColor: Chart.defaults.global.defaultColor,
-            borderCapStyle: 'butt',
-            borderDash: [],
-            borderDashOffset: 0.0,
-            borderJoinStyle: 'miter',
-            fill: false, // do we fill in the area between the line and its base axis
-            skipNull: true,
-            drawNull: false,
-        },
-        point: {
-            display: 0,
-            radius: 0,
-            backgroundColor: Chart.defaults.global.defaultColor,
-            borderWidth: 0,
-            borderColor: Chart.defaults.global.defaultColor,
-            // Hover
-            hitRadius: 0,
-            hoverRadius: 0,
-            hoverBorderWidth: 0,
-        },
-        tooltips:{
-          enabled: false,
-          custom: null
-        }
-    }
-};
-
-function addData (chart, values) {
-  var maxlen = defaultDataLength;
-  if (config.data.datasets.length > 0) {
-      //config.data.labels.push('dataset #' + config.data.labels.length);
-
-      $.each(config.data.datasets, function(i, dataset) {
-          dataset.data.push(values);
-          if(dataset.data.length > maxlen){
-            dataset.data.shift();
-          }
-      });
-      chart.update();
-  }
-}
-
-function updatePlot(chart, newValues) {
-    //var chartData = chart.data.datasets[0].data;
-
-    // add new
-    chart.data.datasets[0].data = chart.data.datasets[0].data.concat(newValues);
-    // chop off the old
-    chart.data.datasets[0].data.splice(0, newValues.length);
-    // redraw
-    chart.update();
-}
-
 function updateCoords(chart, points) {
-
-    var newData = Array(1000).fill(null);
     var pointsLength = points.length;
+    var newData = [];
     var nextPoint = null;
 	for (var i = 0; i < pointsLength; i++) {
         nextPoint = points[i];
-        newData[points[i][0]] = points[i][1];
+        newData.push(points[i][1]);
     }
     // add new
     chart.data.datasets[0].data = newData;
@@ -169,8 +50,10 @@ var pipe = function(ws, el_name) {
         //    //console.log(bufferData);
         //    bufferData = [];
         //}
+        for(var i=0;i<$.numChannels;i++){
+            updateCoords($.charts[i], data[i]);
+		}
 
-        updateCoords($.charts.plot1, data[0]);
     }
     //ws.onclose   = function()  { console.log('websocket CLOSED');};
 
@@ -212,26 +95,85 @@ var pipe = function(ws, el_name) {
     });
 };
 
+var getRandomData = function(length){
+    var data = {
+                    labels: [],
+                    datasets: [{
+                        label: "",
+                        data: [],
+                        fill: false,
+                        borderColor: "#000000",
+                    }]
+                };
+    for(var i=0;i< $.dataLength;i++){
+        data.datasets[0].data.push(getNewData());
+        data.labels.push(getNewData());
+    }
+    return data;
+}
 
 $(document).ready(function(){
     $.charts = {};
+    $.numChannels = 3;
+    $.dataLength = 500;
 
-    // create the chart and save to global jquery scope
-    var ctx = document.getElementById("placeholder");
-    $.charts.plot1 = new Chart(ctx, config);
-
-    console.log($.charts.plot1)
-
-    // default 250Hz
-    //var tid = setInterval(function() { addData($.charts.plot1,getNewData()); }, 10);
+    // globals
+    // set default window dimensions
 
 
-    // add one data at a time manually
-    var $oneMoreButton = $('.add');
-    $oneMoreButton.on('click',function(e){
-        addData($.charts.plot1,getNewData());
-        console.log($.charts.plot1)
-    });
+    var config = {
+        scales: {
+            xAxes: [{
+              display: true,
+                gridlines: {
+                    display:false,
+                    drawTicks: false,
+                    lineWidth: 0.5
+                },
+              ticks: {
+                  userCallback: function(dataLabel, index) {
+                      return '';
+                  }
+              }
+            }],
+            yAxes: [{
+                gridlines: {
+                    display:false,
+                    drawTicks: false,
+                    lineWidth: 0.5
+                },
+              display: true,
+              ticks: {
+                  display: false,
+                  suggestedMin: -60,
+                  suggestedMax: 60
+
+              }
+            }]
+        },
+        responsive: true,
+        responsiveAnimationDuration: 0,
+        animation: {
+            duration: 0,
+            easing: "easeOutQuart",
+            onProgress: function() {},
+            onComplete: function() {},
+        },
+        tooltips:{
+          enabled: false,
+          custom: null
+        }
+    };
+
+    Chart.defaults.global.elements.line.tension = 0;
+    Chart.defaults.global.elements.line.borderWidth = 1;
+    Chart.defaults.global.elements.point.radius = 0;
+
+    for(var i=0;i< $.numChannels;i++) {
+        // create the chart and save to global jquery scope
+        ctx = document.getElementById("chartContainer"+i);
+        $.charts[i] = new Chart(ctx, {type: 'line', data: getRandomData(), options: config});
+    }
 
     // declare
     var sockjs_url = '/echo';

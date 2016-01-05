@@ -1,0 +1,189 @@
+<!doctype html>
+<html><head>
+    <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+<head>
+<body lang="en">
+    <h4>EEG Demo with <a href="https://github.com/nnnick/Chart.js" target="_blank">Chart.js</a> (1.0)</h4>
+
+    <!-- metric channel container -->
+    <div id="first" class="box chartContainer">
+        redraws per second: <input type="text" id="fps" value="24" size="4"/> <br/>
+        <select id="numChannelsSelect">
+            <option value=""># of channels</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+        </select>
+        <!-- connection buttons -->
+        <button id="connect" class="connect">connect</button>
+        <button id="disconnect" class="disconnect">disconnect</button>
+    </div>
+    <!-- -->
+
+    <div class="demo-container">
+        <!-- canvas -->
+        <canvas id="chartContainer0" width="923" height="100"></canvas>
+        <canvas id="chartContainer1" width="923" height="100"></canvas>
+        <canvas id="chartContainer2" width="923" height="100"></canvas>
+        <canvas id="chartContainer3" width="923" height="100"></canvas>
+        <canvas id="chartContainer4" width="923" height="100"></canvas>
+        <canvas id="chartContainer5" width="923" height="100"></canvas>
+        <canvas id="chartContainer6" width="923" height="100"></canvas>
+        <canvas id="chartContainer7" width="923" height="100"></canvas>
+        <canvas id="chartContainer8" width="923" height="100"></canvas>
+        <canvas id="chartContainer9" width="923" height="100"></canvas>
+        <canvas id="chartContainer10" width="923" height="100"></canvas>
+        <canvas id="chartContainer11" width="923" height="100"></canvas>
+        <canvas id="chartContainer12" width="923" height="100"></canvas>
+        <canvas id="chartContainer13" width="923" height="100"></canvas>
+        <canvas id="chartContainer14" width="923" height="100"></canvas>
+        <canvas id="chartContainer15" width="923" height="100"></canvas>
+    </div>
+
+    <script type="text/javascript">
+// random value generator (pick between -10 and 10)
+function getNewData(){
+    return Math.floor(Math.random() * 21) - 10;
+}
+
+// update all charts with 10 new random values
+var randomUpdate = function(){
+    for(var i=0;i< $.numChannels;i++) {
+
+        // new set of points with 10 old ones shifted off, and 10 new ones added
+        // (simulating window with overlap 10 coming from websocket)
+        for (var p = 0; p < $.dataLength; p++) {
+            if(p < $.dataLength - 10){
+                // shift old points 10 back
+                $.charts[i].datasets[0].points[p]['value'] = $.charts[i].datasets[0].points[(p+10)]['value'];
+            } else {
+                // last 10 get new values randomly
+                $.charts[i].datasets[0].points[p]['value'] = getNewData();
+            }
+        }
+        $.charts[i].update();
+    }
+}
+
+var getRandomData = function(length){
+    var data = {
+                    labels: [],
+                    datasets: [{
+                        label: "",
+                        data: [],
+                        strokeColor:"rgba(0,0,0,1)"
+                    }]
+                };
+    // generate as many random points as needed to fill the graph
+    for(var i=0;i< $.dataLength;i++){
+        data.datasets[0].data.push(getNewData());
+        data.labels.push("");
+    }
+    return data;
+}
+
+var initCharts = function(){
+    var config = {
+        pointDot: false,
+        bezierCurve: false,
+        datasetFill:false,
+        datasetStroke : true,
+        datasetStrokeWidth : 1
+
+    };
+
+    // instantiate charts
+    for(var i=0;i< $.numChannels;i++) {
+        var ctx = document.getElementById("chartContainer"+i).getContext("2d");
+        $.charts[i] = new Chart(ctx).Line(getRandomData(), config);
+    }
+}
+
+$(document).ready(function(){
+    $.charts = {};
+    $.dataLength = 500;
+    $.tid = null;
+
+    // make the dots go away
+    // make the lines non-bezier curved
+    Chart.defaults.global.animation = false;
+    Chart.defaults.global.showScale = true;
+    Chart.defaults.global.scaleOverride = true;
+    Chart.defaults.global.scaleSteps = 2;
+    Chart.defaults.global.scaleStepWidth = 10;
+    Chart.defaults.global.scaleStartValue = -10;
+    Chart.defaults.global.scaleLineWidth = 1;
+    Chart.defaults.global.scaleShowGridLines = true;
+    Chart.defaults.global.scaleGridLineColor = "rgba(0,0,0,1)";
+    Chart.defaults.global.scaleGridLineWidth = 1;
+    Chart.defaults.global.showTooltips = false;
+    Chart.defaults.global.tooltipEvents = [];
+    Chart.defaults.global.bezierCurve = false;
+    Chart.defaults.global.bezierCurveTension = 0;
+    Chart.defaults.global.pointDot = false;
+    Chart.defaults.global.pointDotRadius = 0;
+    Chart.defaults.global.datasetFill = false;
+    Chart.defaults.global.datasetStrokeWidth = 1;
+//    Chart.defaults.global.elements.line.borderWidth = 1;
+//    Chart.defaults.global.elements.point.radius = 0;
+//    Chart.defaults.global.elements.point.hitRadius = 0;
+//    Chart.defaults.global.elements.point.hoverRadius = 0;
+//    Chart.defaults.global.elements.point.hoverBorderWidth = 0;
+//    Chart.defaults.global.elements.point.hoverable = false;
+    Chart.defaults.global.responsive = false;
+//    Chart.defaults.global.responsiveAnimationDuration = 0;
+//    Chart.defaults.global.events = [];
+//    Chart.defaults.global.animation.duration = 0;
+
+    $('#numChannelsSelect').change(function(){
+        $.numChannels = $(this).val();
+        initCharts();
+        console.log($.charts)
+    });
+
+    // bind connect button
+    $('#connect').on('click', function(e){
+        if($.numChannels != "") {
+            var fps = $('#fps').val();
+
+            $('#disconnect').show();
+            $('#connect').hide();
+            e.preventDefault();
+            var timeToSleep = parseInt(1000 / parseInt(fps));
+            console.log('connect: looping at ' + fps + ' times per sec. will sleep ' + timeToSleep + ' msec between each loop');
+            $.tid = setInterval(randomUpdate, timeToSleep);
+        }
+    });
+
+    // bind disconnect
+    $('#disconnect').on('click', function(e){
+        console.log('disconnect')
+        $('#connect').show();
+        $('#disconnect').hide();
+        e.preventDefault();
+        clearInterval($.tid);
+    });
+
+
+
+});
+
+
+    </script>
+</body></html>
+
+

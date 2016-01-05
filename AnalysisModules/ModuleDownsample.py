@@ -56,10 +56,11 @@ class ModuleDownsample(ModuleAbstract):
 
                 if self.debug:
                     print self.LOGNAME + "[" + method.consumer_tag + "]"
-                    print window_coords.shape
-                    print window_coords_downsampled.shape
+                    print "original window dimensions: " + str(window_coords.shape)
+                    print "downsampled window dimensions: " + str(window_coords_downsampled.shape)
                     #print window_coords_downsampled
-                    print len(window_to_deliver)
+                    #print window_to_deliver
+                    #print len(window_to_deliver)
 
 
         elif self.inputs['data']['message_type'] == MESSAGE_TYPE_TIME_SAMPLE:

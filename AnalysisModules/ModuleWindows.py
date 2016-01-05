@@ -25,9 +25,10 @@ class ModuleWindows(ModuleAbstract):
 
         # init self vars
         # window params
-        self.samples_per_second = 1000 # this is unused, just a placeholder for now
         self.samples_per_window = self.module_settings["samples_per_window"] if "samples_per_window" in self.module_settings else 500
         self.window_overlap = self.module_settings["window_overlap"] if "window_overlap" in self.module_settings else 100
+        if self.window_overlap == 0:
+            self.window_overlap = self.samples_per_window
 
         if self.debug:
             print self.LOGNAME + "Samples per window:" + str(self.samples_per_window)
@@ -75,7 +76,6 @@ class ModuleWindows(ModuleAbstract):
         # because of cloudbrain connector publisher convention, this is assumed to be in json format
         # note: when using pika, after retrieving json, keys are always in utf-8 format
         buffer_content = json.loads(body)
-
         for record in buffer_content:
 
             # get the next data out of the buffer as an array indexed by column names
@@ -108,7 +108,7 @@ class ModuleWindows(ModuleAbstract):
                 self.rolling_counter = self.rolling_counter + 1
 
                 # check if we have reached next window yet
-                if(self.rolling_counter == self.window_overlap):
+                if(self.rolling_counter >= self.window_overlap):
                     # reached overlap, time to roll over to next window
 
                     # Step 1: trim off old data columns from the beginning of window
@@ -125,4 +125,5 @@ class ModuleWindows(ModuleAbstract):
 
                     # debug
                     if self.debug:
+                        print self.window.shape
                         print self.window

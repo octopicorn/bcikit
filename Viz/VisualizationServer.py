@@ -7,17 +7,27 @@ from sockjs.tornado import SockJSRouter
 from Viz.Server.Multiplex import MultiplexConnection
 from Viz.Server.Connections import ConnectionPlot, ConnectionClassLabel
 import os
+import yaml
 
 class VisualizationServer:
 
     LOGNAME = "[Visualization Server] "
 
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, conf_path='/conf.yml'):
         self.debug = debug
+        self.conf_path = conf_path
+        self.conf = None
 
     def start(self, httpPort = 9999):
         # Create multiplexer
         router = MultiplexConnection.get(ann=ConnectionPlot, bob=ConnectionClassLabel)
+
+        # get config from yaml file
+        location = os.path.realpath( os.path.join(os.getcwdu(), "AnalysisModules" ) )
+        settings_file_path = os.path.join(location, self.conf_path)
+        stream = file(settings_file_path, 'r')
+        # set conf on all multiplexer channels from the yaml config file
+        router.set_conf(yaml.load(stream))
 
         # Register multiplexer
         EchoRouter = SockJSRouter(router, '/echo')

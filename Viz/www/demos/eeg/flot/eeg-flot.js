@@ -66,7 +66,10 @@ var pipe = function(ws, el_name) {
     ws.onmessage = function(e) {
         // get incoming data as json
         var data = JSON.parse(e.data);
-        updatePlotFromMatrix($.charts.plot1, data[0]);
+        for(var i=0;i<$.numCharts;i++){
+            updatePlotFromMatrix($.charts[i], data[i]);
+        }
+
     }
 
     ws.onopen    = function()  { console.log('websocket OPEN');}
@@ -112,7 +115,29 @@ var pipe = function(ws, el_name) {
 
 // main
 $(document).ready(function(e){
-    $.charts = {};
+
+    $.dataLength = 500; // number of dataPoints visible at any point
+	$.numChannels = 8;
+	$.charts = [];
+
+    // initialize plot with some points
+    for(var i=0;i< $.numChannels;i++) {
+        $.charts[i] = $.plot("#chartContainer"+i, [getRandoms($.dataLength)], {
+            canvas: true,
+            series: {
+                shadowSize: 0,
+                color: "rgb(255, 100, 123)"
+            },
+            yaxis: {
+                min: -65,
+                max: 65
+            },
+            xaxis: {show: false}
+        });
+    }
+
+    // keep the num of charts for easy for looping
+	$.numCharts = $.charts.length;
 
     // declare socket, point to uri: /echo
     // this will establish connection to socket server
@@ -123,17 +148,5 @@ $(document).ready(function(e){
     var channel1  = multiplexer.channel('ann');
     pipe(channel1,  'first');
 
-    // initialize plot with some points
-    $.charts.plot1 = $.plot("#placeholder", [getRandoms(500)], {
-        canvas: true,
-        series: {
-            shadowSize: 0,
-            color: "rgb(255, 100, 123)"
-        },
-        yaxis: {
-            min: -65,
-            max: 65
-        },
-        xaxis: { show: false }
-    });
+
 });
