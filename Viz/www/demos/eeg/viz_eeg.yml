@@ -13,11 +13,11 @@ modules:
       sampling_rate: 250  # Hz (samples per second)
       num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
       range: [-40,40]   # range of integers, (i.e. [1,10])
-      pattern: "eeg"   # rand | sine
+      pattern: "sine"   # rand | sine
       frequency: 10  # Hz (only used with sine)
     outputs:
       data:
-        message_queues: "viz_eeg"
+        message_queues: "eeg"
         message_type: "TIME_SAMPLE"
         data_type: "RAW_DATA"
         buffer_size: 0
@@ -34,7 +34,7 @@ modules:
       window_overlap: 0
     inputs:
       data:
-        name: "viz_eeg"
+        name: "eeg"
         message_type: "TIME_SAMPLE"
         data_type: "RAW_DATA"
     outputs:
@@ -57,7 +57,7 @@ modules:
         data_type: "RAW_DATA"
     outputs:
       data:
-        message_queues: "viz_coords"
+        message_queues: "viz_eeg"
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0

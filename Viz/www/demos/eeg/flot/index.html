@@ -8,41 +8,73 @@
     <script type="text/javascript" src="/lib/flot/jquery.flot.canvas.js"></script>
     <script type="text/javascript" src="/lib/flot/jquery.flot.downsample.js"></script>
     <script src="/multiplex.js"></script>
+    <script src="../demo-ui.js"></script>
     <script src="eeg-flot.js"></script>
+    <style>
+        .multichart { height: 100px; width:100%; }
+    </style>
 <head>
 <body lang="en">
     <h5><a href="/">Back</a></h5>
     <h4>EEG Demo with <a href="http://www.flotcharts.org/flot/examples/" target="_blank">Flot</a></h4>
+
+    <b>data view: </b><input type="radio" name="testmode" value="marker" /> test mode
+    <input type="radio" name="testmode" value="continuous" checked="checked" /> continuous<br/><br/>
+
+    # datapoints: <input type="text" id="dataLength" value="500" size="4"/><br/>
+
+    # channels:  <select id="numChannelsSelect">
+        <option value=""></option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+        <option value="11">11</option>
+        <option value="12">12</option>
+        <option value="13">13</option>
+        <option value="14">14</option>
+        <option value="15">15</option>
+        <option value="16">16</option>
+    </select>
+
     <!-- metric channel container -->
-    <div id="first" class="box chartContainer">
-        <select class="metricSelect">
+    <div id="first" class="box chartContainer hidden">
+        <br/>
+        metric: <select class="metricSelect">
             <option value="viz_eeg" selected="selected">viz_eeg</option>
         </select>
         <!-- connection buttons -->
-        <!-- connection buttons -->
         <button class="connect">connect</button>
         <button class="disconnect hidden">disconnect</button>
-        <button class="add">random data reset</button>
     </div>
     <!-- -->
+
     <div class="demo-container">
-        <div id="chartContainer0" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer1" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer2" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer3" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer4" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer5" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer6" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer7" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer8" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer9" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer10" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer11" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer12" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer13" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer14" style="height: 100px; width:50%;"></div>
-        <div id="chartContainer15" style="height: 100px; width:50%;"></div>
+        <div id="chartContainer0" class="multichart"></div>
+        <div id="chartContainer1" class="multichart"></div>
+        <div id="chartContainer2" class="multichart"></div>
+        <div id="chartContainer3" class="multichart"></div>
+        <div id="chartContainer4" class="multichart"></div>
+        <div id="chartContainer5" class="multichart"></div>
+        <div id="chartContainer6" class="multichart"></div>
+        <div id="chartContainer7" class="multichart"></div>
+        <div id="chartContainer8" class="multichart"></div>
+        <div id="chartContainer9" class="multichart"></div>
+        <div id="chartContainer10" class="multichart"></div>
+        <div id="chartContainer11" class="multichart"></div>
+        <div id="chartContainer12" class="multichart"></div>
+        <div id="chartContainer13" class="multichart"></div>
+        <div id="chartContainer14" class="multichart"></div>
+        <div id="chartContainer15" class="multichart"></div>
     </div>
+
+</body></html>
 
 
 
