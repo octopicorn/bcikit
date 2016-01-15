@@ -48,9 +48,10 @@ class AnalysisService(object):
     def setup(self):
 
         # get config from yaml file (default = ./conf.yml)
-        # settings_file_path = os.path.join(self.location, './conf.yml')
-        settings_file_path = os.path.join(self.location, self.conf_path)
+        # config file path is relative to root folder
+        settings_file_path = os.path.realpath( os.path.join( os.getcwdu(), self.conf_path) )
         stream = file(settings_file_path, 'r')
+
         # set local conf property from the yaml config file
         self.conf = yaml.load(stream)
 

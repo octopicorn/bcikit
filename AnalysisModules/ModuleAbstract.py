@@ -11,7 +11,7 @@ class ModuleAbstract(object):
 
     MODULE_NAME = "Abstract"
 
-    def __init__(self, device_name, device_id, rabbitmq_address, module_conf, global_conf):
+    def __init__(self, device_name, device_id, rabbitmq_address, module_conf={}, global_conf={}):
         """
         global constructor for all module classes, not meant to be overwritten by subclasses
         :param device_name:
@@ -31,6 +31,7 @@ class ModuleAbstract(object):
         self.rabbitmq_address = rabbitmq_address
         self.module_conf = module_conf
         self.global_conf = global_conf
+        self.global_settings = self.global_conf["global"] if self.global_conf and "global" in self.global_conf else {}
 
         # id
         self.id = None
@@ -83,6 +84,10 @@ class ModuleAbstract(object):
         # so we'd like to know num channels, and a header is for convenience
         # hard-coded "eeg" could be a problem if the device's metric name for raw data is not "eeg"
         self.num_channels = get_num_channels(self.device_name,"eeg")
+        # overridden by global setting
+        if "num_channels" in self.global_settings:
+            self.num_channels = self.global_settings["num_channels"]
+        # overridden by module specific setting
         if "num_channels" in self.module_settings:
             self.num_channels = self.module_settings["num_channels"]
 
@@ -110,20 +115,21 @@ class ModuleAbstract(object):
                 # an example of where an output might use more than one message_queue might be:
                 # one output goes to visualization, while a second copy continues down the processing chain
 
-                # for convenience, convert the "message_queues" parameter to list if it isn't already
-                if type(output['message_queues']) != list:
-                    output['message_queues'] =  [output['message_queues']]
+                if 'message_queues' in output:
+                    # for convenience, convert the "message_queues" parameter to list if it isn't already
+                    if type(output['message_queues']) != list:
+                        output['message_queues'] =  [output['message_queues']]
 
-                # there is one publisher per output
-                for message_queue_name in output['message_queues']:
-                    self.publishers[output_key][message_queue_name] = PikaPublisher(
-                                                                device_name=self.device_name,
-                                                                device_id=self.device_id,
-                                                                rabbitmq_address=self.rabbitmq_address,
-                                                                metric_name=message_queue_name)
+                    # there is one publisher per output
+                    for message_queue_name in output['message_queues']:
+                        self.publishers[output_key][message_queue_name] = PikaPublisher(
+                                                                    device_name=self.device_name,
+                                                                    device_id=self.device_id,
+                                                                    rabbitmq_address=self.rabbitmq_address,
+                                                                    metric_name=message_queue_name)
 
-                    # also instantiate an output buffer for each publisher
-                    self.output_buffers[output_key][message_queue_name] = []
+                        # also instantiate an output buffer for each publisher
+                        self.output_buffers[output_key][message_queue_name] = []
 
 
     def start(self):

@@ -1,0 +1,176 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bcikit | Demo</title>
+
+    <link rel="stylesheet" href="/lib/normalize.css" />
+    <link rel="stylesheet" href="/lib/foundation/css/foundation.css" />
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/demos/demo.css" />
+
+    <style>
+        /* this style will be slightly different per charting library */
+        .multichart { height: 100px; width:100%; }
+    </style>
+<head>
+<body lang="en">
+
+    <!-- back button -->
+    <div class="row full-width">
+        <div class="large-12 columns">
+            <a class="button round small" href="/">Back</a>
+        </div>
+    </div>
+    <!-- /back button -->
+
+
+{% if script_info is None %}
+    <!-- no script message -->
+    <div class="row full-width">
+        <div class="large-12 columns">
+        No demo script defined.
+        </div>
+    </div>
+    <!-- /no script message -->
+{% else %}
+
+    <!-- title -->
+    <div class="row full-width">
+        <div class="large-12 columns">
+            <h4>{{ script_info["title"] }}
+                {% if script_info["library_link"] %}
+                    <a href='{{ script_info["library_link"] }}' target="_blank"><i class="fa fa-external-link"></i></a>
+                {% end %}
+            </h4>
+        </div>
+    </div>
+    <!-- /title -->
+
+    <div class="row full-width">
+        <!-- left pane -->
+        <div class="large-3 columns ">
+            <div class="panel">
+                <section class="section-container">
+
+                    <section id="controls" class="section hidden">
+                        <!-- connection buttons -->
+                        <button class="button expanded large connect">connect</button>
+                        <button class="hidden button expanded large alert disconnect">disconnect</button>
+                        <!-- metric channel container -->
+                        <div class="row">
+                            <div class="small-3 columns">
+                              <label for="metricSelect" class="text-right middle">Metric</label>
+                            </div>
+                            <div class="small-9 columns">
+                                <select id="metricSelect"></select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="section clearfix">
+                        <div class="row">
+                            <div class="small-3 columns">
+                              <label for="testmode" class="text-right middle">Test</label>
+                            </div>
+                            <div class="small-9 columns">
+                                <div class="switch small float-left">
+                                  <input class="switch-input" id="testmode" type="checkbox" name="testmode">
+                                  <label class="switch-paddle" for="testmode">
+                                    <span class="show-for-sr"> </span>
+                                  </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="small-3 columns">
+                              <label for="numChannelsSelect" class="text-right middle">Channels</label>
+                            </div>
+                            <div class="small-9 columns">
+                                <select id="numChannelsSelect"></select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="small-3 columns">
+                              <label for="metricName" class="text-right middle">Metric</label>
+                            </div>
+                            <div class="small-9 columns">
+                                <input id="metricName" type="text" value="octopicorn" size="20" />
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="section">
+                        # datapoints: <input type="text" id="dataLength" value="500" size="4"/>
+                    </section>
+                </section>
+            </div>
+        </div>
+        <!-- /left pane -->
+
+        <!-- charts -->
+        <div class="large-9 columns">
+            <div class="row">
+                <div class="large-12 columns">
+                    <div class="hidden" id="chartContainerTemplates">
+                        {% set chart_tag = script_info["chart_tag"] if "chart_tag" in script_info else "div" %}
+                        <{{chart_tag}} id="chartContainerTemplate" class="multichart"></{{chart_tag}}>
+                        <!--
+                        the above will render something like:
+                        <div id="chartContainerTemplate" class="multichart"></div>
+                        unless a custom chart_tag is specified (i.e. canvas), in which case that type of element will be used
+                        -->
+                    </div>
+
+                    <div id="chartContainer0" class="multichart"></div>
+                    <div id="chartContainer1" class="multichart"></div>
+                    <div id="chartContainer2" class="multichart"></div>
+                    <div id="chartContainer3" class="multichart"></div>
+                    <div id="chartContainer4" class="multichart"></div>
+                    <div id="chartContainer5" class="multichart"></div>
+                    <div id="chartContainer6" class="multichart"></div>
+                    <div id="chartContainer7" class="multichart"></div>
+                    <div id="chartContainer8" class="multichart"></div>
+                    <div id="chartContainer9" class="multichart"></div>
+                    <div id="chartContainer10" class="multichart"></div>
+                    <div id="chartContainer11" class="multichart"></div>
+                    <div id="chartContainer12" class="multichart"></div>
+                    <div id="chartContainer13" class="multichart"></div>
+                    <div id="chartContainer14" class="multichart"></div>
+                    <div id="chartContainer15" class="multichart"></div>
+
+
+                    <!-- <img src="http://placehold.it/500x100&text=[chart]"/> -->
+                </div>
+            </div>
+        </div>
+        <!-- /charts -->
+
+    </div>
+
+    <!-------------------------------------------------------------------------- -->
+    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script src="/lib/foundation/js/vendor/what-input.min.js"></script>
+    <script src="/lib/foundation/js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+
+    <!-- websocket and multiplex -->
+    <script src="/lib/sockjs/sockjs.min.js"></script><!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
+    <script src="/multiplex.js"></script>
+
+    <!-- specific scripts per demo, set in /Viz/VisualizationServer.py > MainHandler.get_demo_scripts() -->
+    {% for src in script_info['scripts'] %}
+        <script src="{{src}}"></script>
+    {% end %}
+
+    <script src="/demos/demo-ui.js"></script><!-- universal js code for demo pages-->
+
+{% end %}
+</body>
+</html>

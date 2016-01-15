@@ -15,8 +15,8 @@ var drawCharts = function(){
                 }
             },
             yaxis: {
-                min: -65,
-                max: 65
+                min: -1000,
+                max: 4000
             },
             xaxis: {show: false}
         });
@@ -25,7 +25,7 @@ var drawCharts = function(){
 	}
 }
 
-var addCoordsWindow = function (chart_index, points) {
+var updateChart = function (chart_index, points) {
 
     var pointsLength = points.length;
 

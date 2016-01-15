@@ -66,11 +66,21 @@ class ConnectionPlot(SockJSConnection):
         # debug
         print "[Tornado Server: ConnectionPlot] opened websocket connection"
         self.clients.add(self)
-        metrics = ListConfOutputMetrics(self.conf)
+        metrics = ListConfOutputMetrics(self.conf, prefix="viz_")
         #print metrics
 
-        # send the handshake to the clients
+        # set a json payload to deliver to UI as a "handshake"
         menu = {"type":"handshake","metrics":metrics}
+
+        # add extra info to the handshake as needed
+        global_conf = self.conf['global'] if 'global' in self.conf else {}
+        if global_conf:
+            if 'num_channels' in global_conf:
+                menu['num_channels'] = global_conf['num_channels']
+
+
+        # send the handshake to the clients
+
         self.send(json.dumps(menu))
 
 

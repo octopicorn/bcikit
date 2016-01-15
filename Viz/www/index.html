@@ -1,42 +1,68 @@
 <!doctype html>
-<html><head>
-    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bcikit | Demo</title>
+
+    <link rel="stylesheet" href="/lib/normalize.css" />
+    <link rel="stylesheet" href="/lib/foundation/css/foundation.css" />
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/demos/demo.css" />
+
+    <style>
+        /* this style will be slightly different per charting library */
+        .multichart { height: 100px; width:100%; }
+    </style>
 <head>
 <body lang="en">
-    <h1>Visualization Demos</h1>
 
-    <div>
-        <table>
-            <tr>
-                <td valign="top">
-                    <fieldset>
-                        <legend>Streaming EEG</legend>
-                        <p><a href="/demos/eeg/canvasjs/index.html">CanvasJS</a></p>
-                        <p><a href="/demos/eeg/canvasjs/all_in_one.html">CanvasJS (all in one)</a></p>
-                        <p><a href="/demos/eeg/flot/index.html">Flot</a></p>
-                        <p><a href="/demos/eeg/plotly/3d.html">plotly.js 3D</a></p>
-                        <p><a href="/demos/eeg/plotly/index.html">plotly.js</a></p>
-                        <p><a href="/demos/eeg/chartjs2/index.html">Chart.js 2.0</a> <em>deprecated</em></p>
-                        <p><a href="/demos/eeg/rickshaw/index.html">Rickshaw</a></p>
-                        <!--<p><a href="/demos/eeg/chartjs1/index.html">Chart.js 1.0</a></p>-->
-                    </fieldset>
+    <div class="column row">
+        <div class="row">
+            <div class="large-12 columns">
+                <h3>bcikit: Visualization Demos</h3>
+            </div>
+        </div>
 
-                </td>
-                <td valign="top">
-                    <fieldset>
-                        <legend>Streaming FFT</legend>
-                        <p><a href="/demos/fft/plotly/index.html">plotly.js</a></p>
-                        <!--<p><a href="/demos/eeg/plotly/3d.html">plotly.js 3D</a></p>
-                        <p><a href="/demos/eeg/canvasjs/index.html">CanvasJS</a></p>
-                        <p><a href="/demos/eeg/rickshaw/index.html">Rickshaw</a></p>
-                        <p><a href="/demos/eeg/flot/index.html">Flot</a></p>
-                        <p><a href="/demos/eeg/chartjs2/index.html">Chart.js 2.0</a> <em>deprecated</em></p>-->
-                        <!--<p><a href="/demos/eeg/chartjs1/index.html">Chart.js 1.0</a></p>-->
-                    </fieldset>
-                </td>
-            </tr>
-        </table>
+        <div class="large-4 columns callout">
+            <h5>Raw EEG</h5>
+            <ul class="vertical menu">
+                <li><a href="/demos/eeg/index.html?script=eeg_canvas_multi">CanvasJS</a></li>
+                <li><a href="/demos/eeg/index.html?script=eeg_canvas_single">CanvasJS (all in one)</a></li>
+                <li><a href="/demos/eeg/index.html?script=eeg_flot">Flot</a></li>
+                <li><a href="/demos/eeg/plotly/index.html">plotly.js</a></li>
+                <li><a href="/demos/eeg/plotly/3d.html">plotly.js 3D</a></li>
+                <!--<li><a href="/demos/eeg/rickshaw/index.html">Rickshaw</a> <em>to-do</em></li>-->
+                <li><a href="/demos/eeg/chartjs2/index.html">Chart.js 2.0</a></li>
+                <li><a href="/demos/eeg/chartjs1/index.html">Chart.js 1.0</a></li>
+            </ul>
+        </div>
+        <div class="large-4 columns callout">
+            <h5>FFT (Fast Fourier Transform)</h5>
+            <ul class="vertical menu">
+                <li><a href="/demos/fft/plotly/index.html">plotly.js</a><li>
+                <!--
+                <li><a href="/demos/eeg/canvasjs/index.html">CanvasJS</a></li>
+                <li><a href="/demos/eeg/rickshaw/index.html">Rickshaw</a></li>
+                <li><a href="/demos/eeg/flot/index.html">Flot</a></li>
+                -->
 
+        </div>
+        <div class="large-4 columns callout">
+            <h5>DWT (Discrete Wavelet Transform)</h5>
+            <ul class="vertical menu">
+                <li><a href="/demos/dwt/plotly/index.html">plotly.js</a></li>
+                <li><a href="/demos/dwt/highcharts/index.html">Highcharts</a></li>
+            </ul>
+        </div>
     </div>
 
+    <!-------------------------------------------------------------------------- -->
+    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script src="/lib/foundation/js/vendor/what-input.min.js"></script>
+    <script src="/lib/foundation/js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
 </body></html>

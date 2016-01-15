@@ -1,75 +1,158 @@
 <!doctype html>
-<html><head>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bcikit | Demo</title>
+
+    <link rel="stylesheet" href="/lib/normalize.css" />
+    <link rel="stylesheet" href="/lib/foundation/css/foundation.css" />
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" type="text/css" href="/demos/demo.css" />
 
-    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
-    <script src="/lib/sockjs/sockjs.min.js"></script><!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
-    <script src="/multiplex.js"></script>
-    <script src="/lib/canvasjs/jquery.canvasjs.min.js"></script>
-    <script src="../demo-ui.js"></script>
-    <script src="eeg-canvasjs-multi.js"></script>
     <style>
+        /* this style will be slightly different per charting library */
         .multichart { height: 100px; width:100%; }
     </style>
 <head>
 <body lang="en">
-    <h5><a href="/">Back</a></h5>
-    <h4>EEG Demo with <a href="http://canvasjs.com/html5-javascript-dynamic-chart/" target="_blank">CanvasJS</a></h4>
 
-    <b>data view: </b><input type="radio" name="testmode" value="marker" /> test mode
-    <input type="radio" name="testmode" value="continuous" checked="checked" /> continuous<br/><br/>
-
-    # datapoints: <input type="text" id="dataLength" value="500" size="4"/><br/>
-
-    # channels:  <select id="numChannelsSelect">
-        <option value=""></option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-        <option value="6">6</option>
-        <option value="7">7</option>
-        <option value="8">8</option>
-        <option value="9">9</option>
-        <option value="10">10</option>
-        <option value="11">11</option>
-        <option value="12">12</option>
-        <option value="13">13</option>
-        <option value="14">14</option>
-        <option value="15">15</option>
-        <option value="16">16</option>
-    </select>
-
-    <!-- metric channel container -->
-    <div id="first" class="box chartContainer hidden">
-        <br/>
-        metric: <select class="metricSelect">
-            <option value="viz_eeg" selected="selected">viz_eeg</option>
-        </select>
-        <!-- connection buttons -->
-        <button class="connect">connect</button>
-        <button class="disconnect hidden">disconnect</button>
+<div class="row full-width">
+    <div class="large-12 columns">
+        <h5><a href="/">Back</a></h5>
+        <h4>This file might still work, but it is deprecated. All demo code has moved up to /demos/eeg/index.html</h4>
+        <h4>EEG Demo with <a href="http://canvasjs.com/html5-javascript-dynamic-chart/" target="_blank">CanvasJS</a></h4>
     </div>
-    <!-- -->
+</div>
 
-    <div class="demo-container">
-        <div id="chartContainer0" class="multichart"></div>
-        <div id="chartContainer1" class="multichart"></div>
-        <div id="chartContainer2" class="multichart"></div>
-        <div id="chartContainer3" class="multichart"></div>
-        <div id="chartContainer4" class="multichart"></div>
-        <div id="chartContainer5" class="multichart"></div>
-        <div id="chartContainer6" class="multichart"></div>
-        <div id="chartContainer7" class="multichart"></div>
-        <div id="chartContainer8" class="multichart"></div>
-        <div id="chartContainer9" class="multichart"></div>
-        <div id="chartContainer10" class="multichart"></div>
-        <div id="chartContainer11" class="multichart"></div>
-        <div id="chartContainer12" class="multichart"></div>
-        <div id="chartContainer13" class="multichart"></div>
-        <div id="chartContainer14" class="multichart"></div>
-        <div id="chartContainer15" class="multichart"></div>
+<div class="row full-width">
+    <div class="large-3 columns ">
+        <div class="panel">
+            <div class="section-container">
+                <section class="section clearfix">
+                    <!--<b>data view: </b><input type="radio" name="testmode" value="marker" /> test mode
+                    <input type="radio" name="testmode" value="continuous" checked="checked" /> continuous-->
+
+                    <p class="float-left">test mode&nbsp;</p>
+                    <div class="switch small float-left">
+                      <input class="switch-input" id="testmode" type="checkbox" name="testmode">
+                      <label class="switch-paddle" for="testmode">
+                        <span class="show-for-sr">Download Kittens</span>
+                      </label>
+                    </div>
+                </section>
+
+                <section class="section">
+                    # channels:
+                    <select id="numChannelsSelect">
+                        <option value=""></option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                    </select>
+                </section>
+
+                <section class="section">
+                    <!-- metric channel container -->
+                    <div id="first" class="box chartContainer hidden">
+                        <br/>
+                        metric: <select class="metricSelect">
+                            <option value="viz_eeg" selected="selected">viz_eeg</option>
+                        </select>
+                        <!-- connection buttons -->
+                        <button class="connect">connect</button>
+                        <button class="disconnect hidden">disconnect</button>
+                    </div>
+                    <!-- -->
+                </section>
+
+
+                <section class="section">
+                    # datapoints: <input type="text" id="dataLength" value="500" size="4"/><br/>
+                </section>
+
+            </div>
+        </div>
     </div>
 
-</body></html>
+
+    <div class="large-6 columns">
+
+        <div class="row">
+
+            <div class="large-12 columns">
+                <div id="chartContainer0" class="multichart"></div>
+                <div id="chartContainer1" class="multichart"></div>
+                <div id="chartContainer2" class="multichart"></div>
+                <div id="chartContainer3" class="multichart"></div>
+                <div id="chartContainer4" class="multichart"></div>
+                <div id="chartContainer5" class="multichart"></div>
+                <div id="chartContainer6" class="multichart"></div>
+                <div id="chartContainer7" class="multichart"></div>
+                <div id="chartContainer8" class="multichart"></div>
+                <div id="chartContainer9" class="multichart"></div>
+                <div id="chartContainer10" class="multichart"></div>
+                <div id="chartContainer11" class="multichart"></div>
+                <div id="chartContainer12" class="multichart"></div>
+                <div id="chartContainer13" class="multichart"></div>
+                <div id="chartContainer14" class="multichart"></div>
+                <div id="chartContainer15" class="multichart"></div>
+                <!-- <img src="http://placehold.it/500x100&text=[chart]"/> -->
+            </div>
+        </div>
+
+    </div>
+
+    <aside class="large-3 columns hide-for-small">
+    <!--<p><img src="http://placehold.it/300x440&text=[foo]"/></p>-->
+    </aside>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-------------------------------------------------------------------------- -->
+
+
+
+
+
+
+    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script src="/lib/foundation/js/vendor/what-input.min.js"></script>
+    <script src="/lib/foundation/js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+
+    <script src="/lib/sockjs/sockjs.min.js"></script><!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
+    <script src="/multiplex.js"></script>
+    <script src="/lib/canvasjs/jquery.canvasjs.min.js"></script>
+    <script src="../demo-ui.js"></script><!-- universal js code for demo pages-->
+    <script src="eeg-canvasjs-multi.js"></script>
+</body>
+</html>

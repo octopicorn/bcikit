@@ -24,7 +24,7 @@ modules:
         message_queues: "eeg"
         message_type: "TIME_SAMPLE"
         data_type: "RAW_DATA"
-        buffer_size: 10
+        buffer_size: 0
 
 ###################################################################
   - id: "foo3"
@@ -32,7 +32,7 @@ modules:
     settings:
       debug: False
       num_channels: 16
-      samples_per_window: 500
+      samples_per_window: 250
       window_overlap: 20
     inputs:
       data:
@@ -52,7 +52,7 @@ modules:
       debug: False
       num_channels: 16
       sampling_rate: 250
-      samples_per_window: 500
+      samples_per_window: 250
     inputs:
       data:
         name: "window"

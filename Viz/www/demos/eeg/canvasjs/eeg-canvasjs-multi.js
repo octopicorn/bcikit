@@ -16,8 +16,8 @@ function drawCharts(){
 				interval: $.dataLength
 			},
 			axisY: {
-				minimum: -60,
-				maximum: 60
+				minimum: -500,
+				maximum: 3000
 			},
 			data: [{
 				type: "line",
@@ -63,7 +63,7 @@ var initChart = function ($chart,count) {
 };
 
 
-var addCoordsWindow = function (chart_index, points) {
+var updateChart = function (chart_index, points) {
 	var pointsLength = points.length;
 
 	if ($.testmode == "marker"){
