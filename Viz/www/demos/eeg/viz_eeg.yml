@@ -3,6 +3,8 @@
 # Specifically, EEG using fixed windows, with coords & downsampling
 #
 ###################################################################
+global:
+  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
 
 modules:
 ###################################################################
@@ -11,10 +13,9 @@ modules:
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
-      num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
-      range: [-40,40]   # range of integers, (i.e. [1,10])
-      pattern: "sine"   # rand | sine
-      frequency: 10  # Hz (only used with sine)
+      range: [-1000,4000]   # range of integers, (i.e. [1,10])
+      pattern: "rand"   # rand | sine
+      frequency: 20  # Hz (only used with sine)
     outputs:
       data:
         message_queues: "eeg"
@@ -27,9 +28,7 @@ modules:
     class: "ModuleWindows"
     settings:
       # samples_per_window:50, window_overlap:21 = 12fps
-
       debug: False
-      num_channels: 16
       samples_per_window: 20
       window_overlap: 0
     inputs:
@@ -39,7 +38,7 @@ modules:
         data_type: "RAW_DATA"
     outputs:
       data:
-        message_queues: "viz_window"
+        message_queues: "window"
         message_type: "MATRIX"
         data_type: "RAW_DATA"
         buffer_size: 0
@@ -49,10 +48,9 @@ modules:
     class: "ModuleConvert"
     settings:
       debug: False
-      num_channels: 16
     inputs:
       data:
-        name: "viz_window"
+        name: "window"
         message_type: "MATRIX"
         data_type: "RAW_DATA"
     outputs:
@@ -63,21 +61,20 @@ modules:
         buffer_size: 0
 
 ######################################################################
-#  - id: "viz3"
-#    class: "ModuleDownsample"
-#    settings:
-#      formula: "lttb"
-#      percent: 80      # percentage of original data size to downsample to
-#      debug: False
-#      num_channels: 16
-#    inputs:
-#      data:
-#        name: "viz_coords"
-#        message_type: "MATRIX"
-#        data_type: "RAW_COORDS"
-#    outputs:
-#      data:
-#        message_queues: "viz_downsampled_eeg"
-#        message_type: "MATRIX"
-#        data_type: "RAW_COORDS"
-#        buffer_size: 0
+  - id: "viz3"
+    class: "ModuleDownsample"
+    settings:
+      formula: "lttb"
+      percent: 50      # percentage of original data size to downsample to
+      debug: False
+    inputs:
+      data:
+        name: "viz_eeg"
+        message_type: "MATRIX"
+        data_type: "RAW_COORDS"
+    outputs:
+      data:
+        message_queues: "viz_eeg_downsampled"
+        message_type: "MATRIX"
+        data_type: "RAW_COORDS"
+        buffer_size: 0

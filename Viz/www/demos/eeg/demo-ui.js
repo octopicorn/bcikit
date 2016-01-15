@@ -19,7 +19,7 @@ var pipe = function(ws, el_name) {
         } else {
             // incoming plot data
             for(var i=0;i<$.numChannels;i++){
-                addCoordsWindow(i,data[i]);
+                updateChart(i,data[i]);
             }
         }
     }
@@ -222,10 +222,6 @@ function initCharts(){
 }
 
 $(document).ready(function(){
-    //foo = randomColors(16);
-    //for(i in foo){
-    //    console.log("color: " + foo[i]);
-    //}
 
     $.testmode = 'continuous';
     $.charts = [];
@@ -241,9 +237,15 @@ $(document).ready(function(){
 
 
     // bind testmode
-    $('input[type=radio][name=testmode]').on('change',function(){
+    $('input[type=checkbox][name=testmode]').on('change',function(){
+        if($(this).is(':checked')){
+            console.log('check')
+        } else {
+            console.log('not check')
+        }
         $.testmode = $(this).val();
-        initCharts();
+
+        drawCharts();
     });
 
     // bind datalength

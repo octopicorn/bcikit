@@ -51,7 +51,7 @@ var getInitData = function (count, channel_index) {
 	return data;
 };
 
-var addCoordsWindow = function (chart_index, points) {
+var updateChart = function (chart_index, points) {
 	var pointsLength = points.length;
 	var oldLength = $.charts[0].options.data[chart_index].dataPoints.length;
 	for (var i = 0; i < pointsLength; i++) {

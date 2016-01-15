@@ -65,8 +65,15 @@ class ModuleSignalGenerator(ModuleAbstract):
 
             # default to the first sine wave (only used if sine)
             self.sine_wave_to_use = 0
-
             self.generate_pattern_func = "generateSine"
+
+        elif self.pattern == "files":
+
+            self.file_list = self.module_settings["files"]
+            self.current_file_index = -1
+            self.current_file = None
+            self.generate_pattern_func = "generateFromFiles"
+
         else:
             # RANDOM PATTERN
             self.generate_pattern_func = "generateRandom"
@@ -75,8 +82,36 @@ class ModuleSignalGenerator(ModuleAbstract):
         #   print "SAMPLING_RATE: " + str(self.sampling_rate) + " Hz"
         #   print "RANGE: " + str(self.range)
 
+    def getNextFile(self):
+        print "************* GET NEXT FILE *******************"
+        # open the next available file
+        self.current_file_index += 1
+        # if we have advanced to the next index, and it's bigger than len of file array
+        if self.current_file_index >= len(self.file_list):
+            # start with the first file again (infinite loop)
+            self.current_file_index = 0
+
+        # open the current file
+        # print "opening file " + str(self.current_file_index)
+        self.current_file = open(self.file_list[self.current_file_index])
+
     def generateSine(self,x):
         message = {"channel_%s" % i: round(self.sine_waves[self.sine_wave_to_use][x],3) for i in xrange(self.num_channels)}
+        return message
+
+    def generateFromFiles(self,x):
+        # if no file open, open the next one
+        if self.current_file is None:
+            self.getNextFile()
+
+
+        nextline = self.current_file.readline()
+        if len(nextline) == 0:
+            self.getNextFile()
+            nextline = self.current_file.readline()
+
+        nextline = nextline.strip().split('\t')
+        message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
         return message
 
     def generateRandom(self,x):
@@ -87,6 +122,8 @@ class ModuleSignalGenerator(ModuleAbstract):
         return message
 
     def generate(self):
+
+        print self.LOGNAME + "NUM CHANNELS: " + str(self.num_channels)
 
         # set calibration to True only when you are trying to calibrate the best possible sampling rate
         # accuracy for your system (see comments below)
