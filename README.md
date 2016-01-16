@@ -47,11 +47,11 @@ Install using normal procedure
 
 Choice A: you plan to modify the code yourself (likely)
 ```
-python setup.py develop
+python setup.py develop --user
 ```
 Choice B: you plan to only use this as third-party tool
 ```
-python setup.py install
+python setup.py install --user
 ```
 
 ## Quickstart: Run Analysis and Visualization in One Call
