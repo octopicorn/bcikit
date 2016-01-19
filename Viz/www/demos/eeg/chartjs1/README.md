@@ -1,0 +1,1 @@
+See README.md in the chartjs2 folder (adjacent to this one)

@@ -83,6 +83,7 @@ class ModuleAbstract(object):
         # usually this module is used with incoming EEG,
         # so we'd like to know num channels, and a header is for convenience
         # hard-coded "eeg" could be a problem if the device's metric name for raw data is not "eeg"
+        # currently "eeg" is a known good metric name for both OpenBCI and Muse
         self.num_channels = get_num_channels(self.device_name,"eeg")
         # overridden by global setting
         if "num_channels" in self.global_settings:

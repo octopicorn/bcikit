@@ -166,6 +166,8 @@ class ModuleClassWindows(ModuleAbstract):
                             self.write('data', windowJson)
 
             elif messageType == self.MESSAGE_TYPE_MATRIX:
+                # this type of input is currently unsupported
+
                 # use this if the input_feature is of type matrix (i.e. window)
                 buffer_content = BufferToMatrix(body)
                 if self.debug:

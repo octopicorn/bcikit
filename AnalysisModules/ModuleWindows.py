@@ -27,8 +27,6 @@ class ModuleWindows(ModuleAbstract):
         # window params
         self.samples_per_window = self.module_settings["samples_per_window"] if "samples_per_window" in self.module_settings else 500
         self.window_overlap = self.module_settings["window_overlap"] if "window_overlap" in self.module_settings else 100
-        if self.window_overlap == 0:
-            self.window_overlap = self.samples_per_window
 
         if self.debug:
             print self.LOGNAME + "Samples per window:" + str(self.samples_per_window)
@@ -37,8 +35,10 @@ class ModuleWindows(ModuleAbstract):
         # create a blank matrix of zeros as a starting window
         self.window = np.matrix(np.zeros((self.num_channels, self.samples_per_window)))
         # create a blank matrix of zeros as the rolling overlap window
-        self.nextWindowSegment = np.matrix(np.zeros((self.num_channels, self.window_overlap)))
-        # deifne range based on overlap length, this will be used in loop below
+        if self.window_overlap > 0:
+            self.nextWindowSegment = np.matrix(np.zeros((self.num_channels, self.window_overlap)))
+
+        # define range based on overlap length, this will be used in loop below
         self.trimOldWindowDataIndexRange = np.arange(self.window_overlap)
 
         self.plotActive = True
@@ -96,14 +96,25 @@ class ModuleWindows(ModuleAbstract):
                 # once we've reached one full window length, set the flag windowFull to true so we can begin rolling
                 if self.fill_counter == self.samples_per_window:
                     self.windowFull = True
-                    if self.debug:
-                        print self.LOGNAME + "Received first window of " + str(self.samples_per_window) + " samples:\n"
+                    # send the window data (first window is sent)
+                    self.sendData()
+
+                    if self.window_overlap == 0:
+                        # if there is 0 overlap, we will just reset initial loop and do this over and over
+                        self.windowFull = False
+                        self.fill_counter = 0
+
+                    else:
+                        if self.debug:
+                            print self.LOGNAME + "Received first window of " + str(self.samples_per_window) + " samples:\n"
+
 
             else:
                 # accumulate every new data into next window segment
                 # note: we have use transpose (T) property to get the horizontal array coming from rabbitmq into a
                 # vertical column for use in our matrix
                 self.nextWindowSegment[:, self.rolling_counter] = arr[1:len(self.headers)][np.newaxis].T
+
                 # keep incrementing rolling counter
                 self.rolling_counter = self.rolling_counter + 1
 
@@ -117,13 +128,16 @@ class ModuleWindows(ModuleAbstract):
                     self.window = np.hstack((self.window, self.nextWindowSegment))
 
                     # we've got a new window to deliver, time to publish it
-                    windowJson = MatrixToBuffer(self.window)
-                    self.write('data', windowJson)
+                    self.sendData()
 
                     # since we've rolled to a new window, time to reset the rolling counter
                     self.rolling_counter = 0
 
-                    # debug
-                    if self.debug:
-                        print self.window.shape
-                        print self.window
+    def sendData(self):
+        windowJson = MatrixToBuffer(self.window)
+        self.write('data', windowJson)
+
+        # debug
+        if self.debug:
+            print self.window.shape
+            print self.window

@@ -34,7 +34,7 @@ function getNewData(channel_index){
     //channel_index = channel_index || 0;
     // add the offset specific to the channel to the random value
     // for example, if it's channel 3, we will add offset * (3+1)
-    return Math.floor(Math.random() * 91) - 50; // + ($.offsetPerChannel * (channel_index+1));
+    return Math.floor(Math.random() * 1001) - 500; // + ($.offsetPerChannel * (channel_index+1));
 }
 
 function updateNumChannelsDropDown(numChannels){

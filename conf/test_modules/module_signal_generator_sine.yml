@@ -1,24 +1,21 @@
 ###################################################################
-# Chain modules in the order you want them
-#
-# Each module can specify input and output features.
-# The term "feature" here is interchangeable with "metric" in cloudbrain.
-# "feature" refers specifically to a tag which identifies the appropriate queue in rabbitmq to subscribe to.
-# First module will almost always take metric "eeg" as input
+# This processing chain is for testing visualization
+# Specifically, EEG using fixed windows, with coords & downsampling
 #
 ###################################################################
+global:
+  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
 
 modules:
 ###################################################################
-  - id: "foo1"
+  - id: "origin1"
     class: "ModuleSignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
-      num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
-      range: [-50,50]   # range of integers, (i.e. [1,10])
-      pattern: "sine"   # rand | sine
-      frequency: 10  # Hz (only used with sine)
+      range: [0,1000]   # range of integers, (i.e. [1,10])
+      pattern: "sine"   # rand | sine | files
+      sine_frequency: 20  # Hz (only used with sine)
     outputs:
       data:
         message_queues: "eeg"
@@ -27,13 +24,13 @@ modules:
         buffer_size: 0
 
 ###################################################################
-  - id: "foo3"
+  - id: "viz1"
     class: "ModuleWindows"
     settings:
+      # samples_per_window:50, window_overlap:21 = 12fps
       debug: False
-      num_channels: 16
-      samples_per_window: 250
-      window_overlap: 20
+      samples_per_window: 20
+      window_overlap: 0
     inputs:
       data:
         name: "eeg"
@@ -45,14 +42,12 @@ modules:
         message_type: "MATRIX"
         data_type: "RAW_DATA"
         buffer_size: 0
-###################################################################
-  - id: "foo5"
-    class: "ModuleFFT"
+
+#####################################################################
+  - id: "viz2"
+    class: "ModuleConvert"
     settings:
       debug: False
-      num_channels: 16
-      sampling_rate: 250
-      samples_per_window: 250
     inputs:
       data:
         name: "window"
@@ -60,7 +55,7 @@ modules:
         data_type: "RAW_DATA"
     outputs:
       data:
-        message_queues: "fft"
+        message_queues: "viz_eeg"
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0
