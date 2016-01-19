@@ -1,0 +1,61 @@
+###################################################################
+# This processing chain is for testing visualization
+# Specifically, EEG using fixed windows, with coords & downsampling
+#
+###################################################################
+global:
+  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+
+modules:
+###################################################################
+  - id: "origin1"
+    class: "ModuleSignalGenerator"
+    settings:
+      debug: False
+      sampling_rate: 250  # Hz (samples per second)
+      range: [-500,3000]   # range of integers, (i.e. [1,10])
+      pattern: "rand"   # rand | sine
+      frequency: 20  # Hz (only used with sine)
+    outputs:
+      data:
+        message_queues: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+
+###################################################################
+  - id: "viz1"
+    class: "ModuleWindows"
+    settings:
+      # samples_per_window:50, window_overlap:21 = 12fps
+      debug: False
+      samples_per_window: 5
+      window_overlap: 0
+    inputs:
+      data:
+        name: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "window"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+
+####################################################################
+  - id: "viz2"
+    class: "ModuleConvert"
+    settings:
+      debug: True
+    inputs:
+      data:
+        name: "window"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "viz_eeg"
+        message_type: "MATRIX"
+        data_type: "RAW_COORDS"
+        buffer_size: 0

@@ -1,0 +1,71 @@
+###################################################################
+# This processing chain is for testing the Record module
+# It will take output from either raw eeg, or from ModuleWindows
+# and save it to a file
+###################################################################
+global:
+  num_channels: 24  # how many outputs to produce (default to device if specified, or 1 if not)
+
+modules:
+###################################################################
+  - id: "origin1"
+    class: "ModuleSignalGenerator"
+    settings:
+      debug: False
+      sampling_rate: 250  # Hz (samples per second)
+      range: [-500,3000]   # range of integers, (i.e. [1,10])
+      pattern: "rand"   # rand | sine | files
+      frequency: 20  # Hz (only used with sine)
+    outputs:
+      data:
+        message_queues: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+
+####################################################################
+#  - id: "viz1"
+#    class: "ModuleWindows"
+#    settings:
+#      debug: False
+#      samples_per_window: 5
+#      window_overlap: 0
+#    inputs:
+#      data:
+#        name: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#    outputs:
+#      data:
+#        message_queues: "window"
+#        message_type: "MATRIX"
+#        data_type: "RAW_DATA"
+#        buffer_size: 0
+
+###################################################################
+  - id: "viz1"
+    class: "ModuleRecord"
+    settings:
+      debug: False
+      include_timestamp: True # whether or not to include timestamp in the saved file
+      # whether or not to add a unique timestamp to the output file (to avoid overwriting other files)
+      # setting this to True will result in timestamp being appended right before the file extension
+      include_timestamp_in_filename: True
+    inputs:
+      data:
+        name: "eeg"
+        # if using output direct from OpenBCI or Muse device, or from ModuleSignalGenerator, uncomment these
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        # if using output from ModuleWindows (matrices), uncomment these
+        #message_type: "MATRIX"
+        #data_type: "RAW_DATA"
+    outputs:
+      data:
+        # in the .gitignore file at root, there is data/*.data
+        # this means that any files with .data extension will be ignored
+        # it is highly recommended to stick with this file extension to avoid altering the git state
+        # also, if you want to use any other file extension, just set the absolute path to a filepath somewhere outside
+        # the bcikit project
+        file: "data/foo.data"
+        file_write_mode: "w" # w (overwrite any preexisting file with the name) | a (append to preexisting file)

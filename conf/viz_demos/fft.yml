@@ -1,0 +1,64 @@
+###################################################################
+# Chain modules in the order you want them
+#
+# Each module can specify input and output features.
+# The term "feature" here is interchangeable with "metric" in cloudbrain.
+# "feature" refers specifically to a tag which identifies the appropriate queue in rabbitmq to subscribe to.
+#
+###################################################################
+global:
+  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+
+modules:
+###################################################################
+  - id: "foo1"
+    class: "ModuleSignalGenerator"
+    settings:
+      debug: False
+      sampling_rate: 250  # Hz (samples per second)
+      range: [-50,50]   # range of integers, (i.e. [1,10])
+      pattern: "sine"   # rand | sine
+      frequency: 10  # Hz (only used with sine)
+    outputs:
+      data:
+        message_queues: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+
+###################################################################
+  - id: "foo3"
+    class: "ModuleWindows"
+    settings:
+      debug: False
+      samples_per_window: 250
+      window_overlap: 20
+    inputs:
+      data:
+        name: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "window"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+###################################################################
+  - id: "foo5"
+    class: "ModuleFFT"
+    settings:
+      debug: False
+      sampling_rate: 250
+      samples_per_window: 250
+    inputs:
+      data:
+        name: "window"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "fft"
+        message_type: "MATRIX"
+        data_type: "RAW_COORDS"
+        buffer_size: 0

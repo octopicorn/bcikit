@@ -1,8 +1,9 @@
-To run (from /CloudbrainAnalysis/ root folder):
+To run, from {bcikit root} folder:
 ```
-$ python run.py  -i octopicorn -d openbci -c Viz/www/demos/eeg/viz_eeg.yml
+$ python run.py  -i octopicorn -d openbci -c conf/viz_demos/eeg.yml
 ```
+And then browse to http://localhost:9999
 
-index.html - one chart per channel
+multi - one chart per channel (use this one)
 
-all_in_one.html - all channels in one chart, with offset separation
+single - experimental try to use all channels in one chart (deprecated, hasn't been updated recently)

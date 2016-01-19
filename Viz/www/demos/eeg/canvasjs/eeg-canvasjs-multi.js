@@ -104,13 +104,30 @@ var updateChart = function (chart_index, points) {
 			$.charts[chart_index].options.data[0].dataPoints[j].x = j;
 		}
 
+	} else if (1) {
+		// add new points & remove old points
+		for (var i = 0; i < pointsLength; i++) {
+
+			// remove one
+			$.charts[chart_index].options.data[0].dataPoints.shift();
+
+			// add one
+			$.charts[chart_index].options.data[0].dataPoints.push({
+				x: points[i][0],
+				y: points[i][1]
+			});
+		}
+		// rebase x values
+		for (var j = 0; j < $.dataLength; j++) {
+			$.charts[chart_index].options.data[0].dataPoints[j].x = j;
+		}
 	} else {
 		/* testmode = continuous
 			in this mode it's sequential data being sent, so we will update the complete chart
 		 */
 
 		// we will need to see how much of the chart to displace, since there could be downsampled values coming in
-		// if diwnsampled, x points are not continuous
+		// if downsampled, x points are not continuous
 		// (example: for a range from 0 to 60, with 60 points downsampled 90% down to 6,
 		// x could look like this: x = [ 0, 12, 15, 33, 52, 60])
 		// in this case, we'll have to find the range between start and end x values, and shift that many points back

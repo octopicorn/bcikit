@@ -31,14 +31,13 @@ class ModuleSignalGenerator(ModuleAbstract):
         self.sampling_rate = float(self.module_settings["sampling_rate"]) if "sampling_rate" in self.module_settings else 100.
 
         # frequency (Hz)
-        self.frequency = 10.
-        if self.module_settings["frequency"]:
-            self.frequency = float(self.module_settings["frequency"])
+        self.frequency = float(self.module_settings["sine_frequency"]) if "sine_frequency" in self.module_settings else 10.
 
         # range
-        self.range = [0,1]
-        if self.module_settings["range"]:
-            self.range = self.module_settings["range"]
+        self.range = self.module_settings["range"] if "range" in self.module_settings else [0,1]
+
+        # data contains timestamp flag
+        self.data_already_contains_timestamp = self.module_settings["data_already_contains_timestamp"] if "data_already_contains_timestamp" in self.module_settings else False
 
         # pattern
         self.pattern = "rand"
@@ -48,19 +47,25 @@ class ModuleSignalGenerator(ModuleAbstract):
         # what pattern to generate
         if self.pattern == "sine":
             # SINE WAVE PATTERN
+            # formula for sine wave is:
             # sine_wave = amp.*sin(2*pi*freq.*time);
-            amp = float(self.range[1])
+
+            # amplitude = half the distance between the min and max
+            amp = abs(float(self.range[1]) - float(self.range[0])) / 2
+            # zero will be halfway between the min and max
+            offset = float(self.range[1]) - amp
+
             # np.linspace(-np.pi, np.pi, sampling_rate) --> make a range of x values, as many as sampling rate
             # this is equivalent to 2*pi*time
-            sine_x = np.linspace(-np.pi, np.pi, self.sampling_rate/self.frequency)
+            sine_x = np.linspace(-np.pi, np.pi, self.sampling_rate)
 
             self.sine_waves = []
             # sine wave 1
-            sine1 = [amp * np.sin(t * self.sampling_rate/self.frequency) for t in sine_x]
+            sine1 = [(amp * np.sin(t * self.sampling_rate/self.frequency)) + offset for t in sine_x]
             self.sine_waves.append(np.tile(sine1,self.frequency))
 
             # sine wave 2 (double amp, triple freq)
-            sine2 = [(2*amp) * np.sin(3 * t * self.sampling_rate/self.frequency) for t in sine_x]
+            sine2 = [((2*amp) * np.sin(3 * t * self.sampling_rate/self.frequency)) + offset for t in sine_x]
             self.sine_waves.append(np.tile(sine2,self.frequency))
 
             # default to the first sine wave (only used if sine)
@@ -68,10 +73,15 @@ class ModuleSignalGenerator(ModuleAbstract):
             self.generate_pattern_func = "generateSine"
 
         elif self.pattern == "files":
-
+            # get file list from settings
             self.file_list = self.module_settings["files"]
+            # force file list to be list if not already
+            if type(self.file_list) != list:
+                self.file_list = [self.file_list]
+
             self.current_file_index = -1
             self.current_file = None
+
             self.generate_pattern_func = "generateFromFiles"
 
         else:
@@ -111,7 +121,14 @@ class ModuleSignalGenerator(ModuleAbstract):
             nextline = self.current_file.readline()
 
         nextline = nextline.strip().split('\t')
-        message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
+        if self.data_already_contains_timestamp:
+            # in this case we already have the timestamp, in the 0th position
+            timestamp = nextline.pop(0)
+            message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
+            message['timestamp'] = timestamp
+        else:
+            # just loop through all the elements in the line, assuming each element = 1 channel sample
+            message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
         return message
 
     def generateRandom(self,x):
@@ -122,8 +139,6 @@ class ModuleSignalGenerator(ModuleAbstract):
         return message
 
     def generate(self):
-
-        print self.LOGNAME + "NUM CHANNELS: " + str(self.num_channels)
 
         # set calibration to True only when you are trying to calibrate the best possible sampling rate
         # accuracy for your system (see comments below)
@@ -165,9 +180,9 @@ class ModuleSignalGenerator(ModuleAbstract):
         elif self.sampling_rate >= 375:
             sleep_padding = .30
         elif self.sampling_rate >= 250:
-            sleep_padding = .35
+            sleep_padding = .30
         elif self.sampling_rate >= 100:
-            sleep_padding = .7
+            sleep_padding = .5
         elif self.sampling_rate >= 50:
             sleep_padding = .79
 
@@ -195,7 +210,10 @@ class ModuleSignalGenerator(ModuleAbstract):
             # now do the processing work
             # generate message by whatever pattern has been specified
             message = getattr(self,self.generate_pattern_func)(self.counter)
-            message['timestamp'] = int(time.time() * 1000000)
+            # generate a timestamp if not already present
+            if self.data_already_contains_timestamp is False:
+                message['timestamp'] = int(time.time() * 1000000)
+
             # deliver 'data' output
             self.write('data', message)
             if self.debug:

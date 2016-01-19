@@ -78,5 +78,5 @@ class ModuleConvert(ModuleAbstract):
 
                 if self.debug:
                     print self.LOGNAME + "convert from " + str(window_data.shape) + " to " + str(window_coords.shape)
-                    #print window_coords
+                    print window_coords
 

@@ -126,7 +126,7 @@ $(document).ready(function() {
             yaxis: {
                 fixedrange: true,
                 autorange: false,
-                range: [-80,80]
+                range: [-500,3000]
             }
         };
 

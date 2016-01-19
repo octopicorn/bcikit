@@ -12,10 +12,10 @@ modules:
     class: "ModuleSignalGenerator"
     settings:
       debug: False
-      sampling_rate: 250  # Hz (samples per second)
-      range: [-1000,4000]   # range of integers, (i.e. [1,10])
-      pattern: "rand"   # rand | sine
-      frequency: 20  # Hz (only used with sine)
+      sampling_rate: 100  # Hz (samples per second)
+      pattern: "files"   # rand | sine | files
+      files: ["data/random_EEG_sample.txt"] # filepath can be either absolute or relative to dir of run.py
+      data_already_contains_timestamp: True # this will let downstream modules know whether or not timestamp is included
     outputs:
       data:
         message_queues: "eeg"
@@ -27,9 +27,8 @@ modules:
   - id: "viz1"
     class: "ModuleWindows"
     settings:
-      # samples_per_window:50, window_overlap:21 = 12fps
       debug: False
-      samples_per_window: 20
+      samples_per_window: 25
       window_overlap: 0
     inputs:
       data:
@@ -56,25 +55,6 @@ modules:
     outputs:
       data:
         message_queues: "viz_eeg"
-        message_type: "MATRIX"
-        data_type: "RAW_COORDS"
-        buffer_size: 0
-
-######################################################################
-  - id: "viz3"
-    class: "ModuleDownsample"
-    settings:
-      formula: "lttb"
-      percent: 50      # percentage of original data size to downsample to
-      debug: False
-    inputs:
-      data:
-        name: "viz_eeg"
-        message_type: "MATRIX"
-        data_type: "RAW_COORDS"
-    outputs:
-      data:
-        message_queues: "viz_eeg_downsampled"
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0
