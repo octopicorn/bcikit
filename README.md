@@ -59,7 +59,7 @@ Sometimes, you might prefer to start/stop the AnalysisService.py and Visualizati
 terminal window, and this is supported.  However, for convenience, most people will want to start/stop both at once.
 You can start both processes by a script at root dir called "run.py"
 ```
-python {path-to-bcikit}/run.py  -i octopicorn -d openbci -c ../Viz/www/demos/eeg/viz_eeg.yml
+python {path-to-bcikit}/run.py  -i octopicorn -d openbci -c conf/viz_demos/eeg.yml
 ```
 
 Parameters to run.py are as follows:
@@ -69,7 +69,7 @@ Parameters to run.py are as follows:
 |-i|--device_id|Yes|A unique ID to identify the device you are sending data from. For example: 'octopicorn2015'.|
 |-d|--device_name|Yes|The name of the device your are sending data from. Supported devices are: openbci, muse. Must be used even if you're using SignalGenerator with no actual device connected (device specs are needed even for mock data).|
 |-q|--mq_host|No (default=**localhost**)|The address of the RabbitMQ message queue you are sending data to. Use 'localhost' if running locally, or cloudbrain.rocks for CloudBrain's hosted service.|
-|-c|--conf_path|No (default=**AnalysisModules/conf.yml**)|Path to your configuration .yml file (relative to the AnalysisModules/ directory)|
+|-c|--conf_path|No (default=**conf.yml**)|Path to your configuration .yml file (relative to the root bcikit/ directory)|
 
 In the future, run.py will likely be the preferred method to run bcikit, since visualization and analysis will share 
 certain startup variables and conf file.
