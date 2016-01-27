@@ -28,7 +28,7 @@ modules:
   - id: "viz1"
     class: "TimeWindow"
     settings:
-      debug: True
+      debug: False
       samples_per_window: 128
       window_overlap: 0
       #multiplier: 1000
