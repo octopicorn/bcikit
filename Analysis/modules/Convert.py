@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix, MatrixToBuffer, MatrixToCoords, DTYPE_COORD
 from lib.lttb import largest_triangle_three_buckets
 import json
@@ -16,7 +16,7 @@ visualizations.
 This module is not meant to handle conversion of every type to every type, so an initial mapping of possible conversions
 is checked at startup() to make sure a legal conversion is specified in the conf.yml file
 """
-class ModuleConvert(ModuleAbstract):
+class Convert(ModuleAbstract):
 
     MODULE_NAME = "Convert Module"
 

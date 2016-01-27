@@ -1,6 +1,6 @@
 ###################################################################
 # This processing chain is for testing the Record module
-# It will take output from either raw eeg, or from ModuleWindows
+# It will take output from either raw eeg, or from TimeWindow
 # and save it to a file
 ###################################################################
 global:
@@ -9,7 +9,7 @@ global:
 modules:
 ###################################################################
   - id: "origin1"
-    class: "ModuleSignalGenerator"
+    class: "SignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
@@ -25,7 +25,7 @@ modules:
 
 ####################################################################
 #  - id: "viz1"
-#    class: "ModuleWindows"
+#    class: "TimeWindow"
 #    settings:
 #      debug: False
 #      samples_per_window: 5
@@ -44,7 +44,7 @@ modules:
 
 ###################################################################
   - id: "viz1"
-    class: "ModuleRecord"
+    class: "Record"
     settings:
       debug: False
       include_timestamp: True # whether or not to include timestamp in the saved file
@@ -54,10 +54,10 @@ modules:
     inputs:
       data:
         name: "eeg"
-        # if using output direct from OpenBCI or Muse device, or from ModuleSignalGenerator, uncomment these
+        # if using output direct from OpenBCI or Muse device, or from SignalGenerator, uncomment these
         message_type: "TIME_SAMPLE"
         data_type: "RAW_DATA"
-        # if using output from ModuleWindows (matrices), uncomment these
+        # if using output from TimeWindow (matrices), uncomment these
         #message_type: "MATRIX"
         #data_type: "RAW_DATA"
     outputs:

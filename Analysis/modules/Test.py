@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix
 import json
 import bisect

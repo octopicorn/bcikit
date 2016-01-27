@@ -89,7 +89,18 @@ class VisualizationServer:
                             "/lib/flot/jquery.flot.downsample.js",
                             "/demos/eeg/flot/eeg-flot.js"
                         ]
-                }
+                },
+                "eeg_epochjs":{
+                    "library_link":"https://github.com/epochjs/epoch",
+                    "title":"EEG Demo with Epoch",
+                    "scripts":[
+                        "/lib/canvasjs/jquery.canvasjs.min.js",
+                        "/demos/eeg/canvasjs/eeg-canvasjs-multi.js"
+                    ],
+                    "stylesheets":[
+                        ""
+                    ]
+                },
             }
         def get_demo_script(self, key):
             return self.get_demo_scripts()[key] if key is not None and key in self.get_demo_scripts().keys() else None

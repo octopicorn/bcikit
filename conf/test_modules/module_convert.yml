@@ -9,7 +9,7 @@ global:
 modules:
 ###################################################################
   - id: "origin1"
-    class: "ModuleSignalGenerator"
+    class: "SignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
@@ -25,7 +25,7 @@ modules:
 
 ###################################################################
   - id: "viz1"
-    class: "ModuleWindows"
+    class: "TimeWindow"
     settings:
       # samples_per_window:50, window_overlap:21 = 12fps
       debug: False
@@ -45,7 +45,7 @@ modules:
 
 ####################################################################
   - id: "viz2"
-    class: "ModuleConvert"
+    class: "Convert"
     settings:
       debug: True
     inputs:

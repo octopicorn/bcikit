@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix, MatrixToBuffer, MatrixToCoords, DTYPE_COORD
 import json
 import itertools
@@ -10,7 +10,7 @@ from lib.constants import *
 """
 This module runs Fast Fourier Transform (FFT) on an incoming matrix of data, with one FFT per channel (row) in the matrix.
 """
-class ModuleFFT(ModuleAbstract):
+class FFT(ModuleAbstract):
 
     MODULE_NAME = "FFT Module"
 

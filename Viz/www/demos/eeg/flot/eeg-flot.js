@@ -15,8 +15,8 @@ var drawCharts = function(){
                 }
             },
             yaxis: {
-                min: -1000,
-                max: 4000
+                min: 21,
+                max: 66
             },
             xaxis: {show: false}
         });
@@ -125,7 +125,8 @@ var getRandoms = function(totalPoints){
         if($.testmode=='marker' && x < ($.dataLength-10)){
 			data.push([x,0]);
 		} else {
-            data.push([x, getNewData()]);
+			data.push([x,0]);
+            //data.push([x, getNewData()]);
         }
         x = x+1;
     }

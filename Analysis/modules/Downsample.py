@@ -1,13 +1,13 @@
 __author__ = 'odrulea'
 
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix, MatrixToBuffer, DTYPE_COORD
 from lib.lttb import largest_triangle_three_buckets
 from lib.constants import *
 import numpy as np
 import json
 
-class ModuleDownsample(ModuleAbstract):
+class Downsample(ModuleAbstract):
 
     MODULE_NAME = "Downsample Module"
     LOGNAME = "[Analysis Service: Downsample Module] "
@@ -15,7 +15,7 @@ class ModuleDownsample(ModuleAbstract):
     # __init__ is handled by parent ModuleAbstract
 
     def setup(self):
-        super(ModuleDownsample, self).setup()
+        super(Downsample, self).setup()
 
         if self.inputs['data']['message_type'] != MESSAGE_TYPE_MATRIX:
             raise ValueError(self.LOGNAME + "Input 'data' must be of type " + MESSAGE_TYPE_MATRIX)

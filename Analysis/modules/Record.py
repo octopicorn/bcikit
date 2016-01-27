@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix
 from lib.constants import *
 import json
@@ -9,7 +9,7 @@ import numpy as np
 """
 This module saves incoming data to durable storage.
 """
-class ModuleRecord(ModuleAbstract):
+class Record(ModuleAbstract):
 
     MODULE_NAME = "Record Module"
 

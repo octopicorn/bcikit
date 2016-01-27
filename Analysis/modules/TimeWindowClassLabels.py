@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix, MatrixToBuffer
 import json
 import bisect
@@ -38,7 +38,7 @@ To do this, we look at the timestamp of the new incoming class label, to see whe
 window we've collected so far.  Then, using that time marker, we slice the old data, label with the old class, and
 deliver it.  The remainder becomes the new accumulator window, to be used with the new class label.
 """
-class ModuleClassWindows(ModuleAbstract):
+class TimeWindowClassLabels(ModuleAbstract):
 
     MODULE_NAME = "Class Windows Module"
 

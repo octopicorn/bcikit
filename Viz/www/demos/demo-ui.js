@@ -105,6 +105,9 @@ $(document).ready(function(){
     $.offsetPerChannel = 0;
     $.numChannels = 1;
 
+    $.yMin = -2048;
+    $.yMax = 2048;
+
     // bind numChannels dropdown
     $('#numChannelsSelect').change(function(){
         $.numChannels = parseInt($(this).val());
@@ -125,6 +128,17 @@ $(document).ready(function(){
     $('#dataLength').on('change', function(e){
         // update datalength global
         $.dataLength = parseInt($(this).val());
+        // if chart is drawn already, re-initialize it
+        if($('#numChannelsSelect').val() != ''){
+            initCharts();
+        }
+    });
+
+    // bind min, max y axis
+    $('#yMin,#yMax').on('change', function(e){
+        // update y axis
+        $.yMin = parseInt($('#yMin').val());
+        $.yMax = parseInt($('#yMax').val());
         // if chart is drawn already, re-initialize it
         if($('#numChannelsSelect').val() != ''){
             initCharts();
@@ -166,7 +180,7 @@ $(document).ready(function(){
         var metric = $('#metricSelect').val();
         var jsonRequest = JSON.stringify({
             "type": "subscription",
-            "deviceName": "openbci",
+            "deviceName": $('#deviceTypeSelect').val(),
             "deviceId": $('#metricName').val(),
             "metric": metric,
             "dataType": "MATRIX",
@@ -189,7 +203,7 @@ $(document).ready(function(){
         var metric = $('#metricSelect').val();
         var jsonRequest = JSON.stringify({
             "type": "unsubscription",
-            "deviceName": "openbci",
+            "deviceName": $('#deviceTypeSelect').val(),
             "deviceId": $('#metricName').val(),
             "metric": metric,
             "dataType": "MATRIX",

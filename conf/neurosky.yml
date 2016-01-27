@@ -4,32 +4,34 @@
 #
 ###################################################################
 global:
-  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+  num_channels: 1  # how many outputs to produce (default to device if specified, or 1 if not)
 
 modules:
 ###################################################################
-  - id: "origin1"
-    class: "SignalGenerator"
-    settings:
-      debug: False
-      sampling_rate: 100  # Hz (samples per second)
-      pattern: "files"   # rand | sine | files
-      files: ["data/random_EEG_sample.txt"] # filepath can be either absolute or relative to dir of run.py
-      data_already_contains_timestamp: True # this will let downstream modules know whether or not timestamp is included
-    outputs:
-      data:
-        message_queues: "eeg"
-        message_type: "TIME_SAMPLE"
-        data_type: "RAW_DATA"
-        buffer_size: 0
+#  - id: "foo1"
+#    class: "SignalGenerator"
+#    settings:
+#      debug: False
+#      sampling_rate: 250  # Hz (samples per second)
+#      num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+#      range: [-50,50]   # range of integers, (i.e. [1,10])
+#      pattern: "rand"   # rand | sine
+#      frequency: 10  # Hz (only used with sine)
+#    outputs:
+#      data:
+#        message_queues: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#        buffer_size: 16
 
 ###################################################################
   - id: "viz1"
     class: "TimeWindow"
     settings:
       debug: False
-      samples_per_window: 25
+      samples_per_window: 128
       window_overlap: 0
+      #multiplier: 1000
     inputs:
       data:
         name: "eeg"
@@ -42,8 +44,9 @@ modules:
         data_type: "RAW_DATA"
         buffer_size: 0
 
-####################################################################
-  - id: "viz2"
+
+###################################################################
+  - id: "foo6"
     class: "Convert"
     settings:
       debug: False
@@ -58,3 +61,4 @@ modules:
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0
+

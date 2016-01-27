@@ -2,7 +2,7 @@ __author__ = 'odrulea'
 
 import json
 import numpy as np
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import MatrixToBuffer
 
 """
@@ -13,7 +13,7 @@ live data is coming in, you are constantly checking it against a trained model. 
 simple buffering on raw data, if you set the overlap to 0 for example.
 """
 
-class ModuleWindows(ModuleAbstract):
+class TimeWindow(ModuleAbstract):
     
     MODULE_NAME = "Windows Module"
     LOGNAME = "[Analysis Service: Windows Module] "
@@ -21,12 +21,13 @@ class ModuleWindows(ModuleAbstract):
     # __init__ is handled by parent ModuleAbstract
 
     def setup(self):
-        super(ModuleWindows,self).setup()
+        super(TimeWindow,self).setup()
 
         # init self vars
         # window params
         self.samples_per_window = self.module_settings["samples_per_window"] if "samples_per_window" in self.module_settings else 500
         self.window_overlap = self.module_settings["window_overlap"] if "window_overlap" in self.module_settings else 100
+        self.multiplier = self.module_settings["multiplier"] if "multiplier" in self.module_settings else None
 
         if self.debug:
             print self.LOGNAME + "Samples per window:" + str(self.samples_per_window)
@@ -134,6 +135,9 @@ class ModuleWindows(ModuleAbstract):
                     self.rolling_counter = 0
 
     def sendData(self):
+        if(self.multiplier):
+            self.window = self.multiplier * self.window
+
         windowJson = MatrixToBuffer(self.window)
         self.write('data', windowJson)
 

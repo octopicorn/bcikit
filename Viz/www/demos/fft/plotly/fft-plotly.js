@@ -10,7 +10,7 @@ var pipe = function(ws, el_name) {
     ws.onmessage = function(e) {
         // get incoming data as json
         var data = JSON.parse(e.data);
-		// use this when updating chart from a ModuleConvert (DTYPE_COORD) output
+		// use this when updating chart from a Convert (DTYPE_COORD) output
 		for(var i=0;i<$.numCharts;i++){
 			addCoords(i,data[i]);
 		}

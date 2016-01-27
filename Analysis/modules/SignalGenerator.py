@@ -1,5 +1,5 @@
 __author__ = 'odrulea'
-from AnalysisModules.ModuleAbstract import ModuleAbstract
+from Analysis.modules.ModuleAbstract import ModuleAbstract
 import time
 import random
 import numpy as np
@@ -14,7 +14,7 @@ This can include the following types of data:
 - class labels
 
 """
-class ModuleSignalGenerator(ModuleAbstract):
+class SignalGenerator(ModuleAbstract):
 
     MODULE_NAME = "Signal Generator Module"
 

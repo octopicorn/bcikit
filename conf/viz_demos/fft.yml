@@ -12,7 +12,7 @@ global:
 modules:
 ###################################################################
   - id: "foo1"
-    class: "ModuleSignalGenerator"
+    class: "SignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
@@ -28,7 +28,7 @@ modules:
 
 ###################################################################
   - id: "foo3"
-    class: "ModuleWindows"
+    class: "TimeWindow"
     settings:
       debug: False
       samples_per_window: 250
@@ -46,7 +46,7 @@ modules:
         buffer_size: 0
 ###################################################################
   - id: "foo5"
-    class: "ModuleFFT"
+    class: "FFT"
     settings:
       debug: False
       sampling_rate: 250
