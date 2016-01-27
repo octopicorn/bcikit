@@ -76,7 +76,7 @@ certain startup variables and conf file.
 
 
 
-## Quickstart Alternative: Run CloudBrain independently of AnalysisModules and VisualizationServer (2 terminal windows) 
+## Quickstart Alternative: Run CloudBrain independently of Analysis and VisualizationServer (2 terminal windows) 
 * if you plan to use a device connector from CloudBrain, you can start that up first to begin streaming data
 (mock connector example given)
 ```
@@ -89,19 +89,19 @@ with the same device id, name, rabbitmq params as above)
 ```
 * Point your web browser to http://localhost:9999/index.html - Currently the eeg/flot is the only demo working
 * Ctrl-C to stop analysis process & viz server
-* Edit analysis processing chain and parameters by modifying AnalysisModules/conf.yml You can try commenting out
+* Edit analysis processing chain and parameters by modifying Analysis/conf.yml You can try commenting out
 module blocks to turn them on or off. Set debug to True to see live output from command line.
 
 ## Analysis Modules Overview
-In the folder "AnalysisModules", find the conf.yml.  This file is used to set a processing chain of analysis modules,
+In the folder "Analysis", find the conf.yml.  This file is used to set a processing chain of analysis modules,
 defining the order, names of input and output metrics, and any special params used by each module.
 
 For now, the defined analysis modules include:
-- ModuleSignalGenerator (generate mock data, either random or sine wave) 
-- ModuleWindows (collect raw data into rolling windows/matrices of fixed size, with optional overlap)
-- ModuleClassWindows (collect raw data + class labels into rolling windows/matrices of variable size, grouped by class label, no overlap)
-- ModuleConvert (conversions, example: convert matrix of raw data to coordinate pairs (x,y) - used for plotting) 
-- ModuleDownsample (decrease number of points while still retaining essential features of graph, used for plotting only)
+- SignalGenerator (generate mock data, either random or sine wave) 
+- TimeWindow (collect raw data into rolling windows/matrices of fixed size, with optional overlap)
+- TimeWindowClassLabels (collect raw data + class labels into rolling windows/matrices of variable size, grouped by class label, no overlap)
+- Convert (conversions, example: convert matrix of raw data to coordinate pairs (x,y) - used for plotting) 
+- Downsample (decrease number of points while still retaining essential features of graph, used for plotting only)
 - ModuleTest (used as a template for new modules)
 
 It is up to the user to make sure that, if one module follows another, that module 1 output is compatible with module 2 
@@ -121,7 +121,7 @@ python {cloudbrain path}/cloudbrain/publishers/sensor_publisher.py --mock -n ope
 ```
 * start the analysis modules script in a separate terminal window, using same device id and rabbitmq host
 ```
-python {CloudbrainAnalysis path}/AnalysisModules/AnalysisService.py -i octopicorn -c localhost -n openbci
+python {CloudbrainAnalysis path}/Analysis/AnalysisService.py -i octopicorn -c localhost -n openbci
 ```
 If debug is on for a given module, it should output to command line.
 
@@ -157,7 +157,7 @@ training (or calibration) sessions, in which capturing class label tag is critic
 
 The current limitations are so many it's not worth listing out.  Only outputs of type (message_type: "MATRIX", 
 data_type: "RAW_COORDS") are supported in any of the visualization demos, so that means the only outputs that can be 
-charted must come from either ModuleConvert or ModuleDownsample.  
+charted must come from either Convert or Downsample.  
 
 Different libraries perform differently in different browsers.  Overall, Canvas.js library has (so far) shown the best 
 performance, as seen here: [http://jsperf.com/amcharts-vs-highcharts-vs-canvasjs/16].  For optimal performance, we 

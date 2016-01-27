@@ -13,7 +13,7 @@
 
     <style>
         /* this style will be slightly different per charting library */
-        .multichart { height: 100px; width:500px; }
+        .multichart { height: 250px; width:80%; }
     </style>
 <head>
 <body lang="en">
@@ -61,10 +61,10 @@
                         <button class="hidden button expanded large alert disconnect">disconnect</button>
                         <!-- metric channel container -->
                         <div class="row">
-                            <div class="small-3 columns">
+                            <div class="small-5 columns">
                               <label for="metricSelect" class="text-right middle">Metric</label>
                             </div>
-                            <div class="small-9 columns">
+                            <div class="small-7 columns">
                                 <select id="metricSelect"></select>
                             </div>
                         </div>
@@ -72,10 +72,10 @@
 
                     <section class="section clearfix">
                         <div class="row">
-                            <div class="small-3 columns">
+                            <div class="small-5 columns">
                               <label for="testmode" class="text-right middle">Test</label>
                             </div>
-                            <div class="small-9 columns">
+                            <div class="small-7 columns">
                                 <div class="switch small float-left">
                                   <input class="switch-input" id="testmode" type="checkbox" name="testmode">
                                   <label class="switch-paddle" for="testmode">
@@ -86,26 +86,52 @@
                         </div>
 
                         <div class="row">
-                            <div class="small-3 columns">
+                            <div class="small-5 columns">
                               <label for="numChannelsSelect" class="text-right middle">Channels</label>
                             </div>
-                            <div class="small-9 columns">
+                            <div class="small-7 columns">
                                 <select id="numChannelsSelect"></select>
                             </div>
                         </div>
 
                         <div class="row">
-                            <div class="small-3 columns">
-                              <label for="metricName" class="text-right middle">Metric</label>
+                            <div class="small-5 columns">
+                              <label for="metricName" class="text-right middle">Device Name</label>
                             </div>
-                            <div class="small-9 columns">
+                            <div class="small-7 columns">
                                 <input id="metricName" type="text" value="octopicorn" size="20" />
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="small-5 columns">
+                              <label for="metricName" class="text-right middle">Device Type</label>
+                            </div>
+                            <div class="small-7 columns">
+                                <select id="deviceTypeSelect">
+                                    <option value="openbci">OpenBCI</option>
+                                    <option value="neurosky" selected>NeuroSky</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="small-2 columns">
+                                <label for="yMin" class="right inline">min</label>
+                            </div>
+                            <div class="small-4 columns">
+                                <input id="yMin" type="text" value="-2048" />
+                            </div>
+                            <div class="small-2 columns">
+                                <label for="yMin" class="right inline">max</label>
+                            </div>
+                            <div class="small-4 columns">
+                                <input id="yMax" type="text" value="2048" size="5" />
+                            </div>
+                        </div>
+
                     </section>
 
                     <section class="section">
-                        # datapoints: <input type="text" id="dataLength" value="500" size="4"/>
+                        # datapoints: <input type="text" id="dataLength" value="1024" size="4"/>
                     </section>
                 </section>
             </div>

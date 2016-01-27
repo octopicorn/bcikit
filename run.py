@@ -3,7 +3,7 @@ __author__ = 'odrulea'
 from cloudbrain.utils.metadata_info import get_supported_metrics, get_supported_devices
 from cloudbrain.settings import RABBITMQ_ADDRESS, MOCK_DEVICE_ID
 import argparse
-from AnalysisModules.AnalysisService import AnalysisService
+from Analysis.AnalysisService import AnalysisService
 from Viz.VisualizationServer import VisualizationServer
 from multiprocessing import Process
 
@@ -24,7 +24,7 @@ def parse_args():
                              "Use " + RABBITMQ_ADDRESS + " to send data to our hosted service. \n"
                                                          "Otherwise use 'localhost' if running CloudBrain locally")
     parser.add_argument('-c', '--conf_path', default="./conf.yml",
-                        help="Path to your configuration .yml file (relative to the AnalysisModules directory).\n"
+                        help="Path to your configuration .yml file (relative to the Analysis directory).\n"
                              "Default is ./conf.yml")
 
     opts = parser.parse_args()

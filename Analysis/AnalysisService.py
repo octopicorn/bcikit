@@ -100,7 +100,8 @@ class AnalysisService(object):
             module_id = module_conf['id']
 
         # dynamically import the module
-        module_filepath = os.path.join(self.location, moduleClassName+'.py')
+        module_filepath = os.path.join(self.location + "/modules", moduleClassName+'.py')
+        print module_filepath
         py_mod = imp.load_source(moduleClassName, module_filepath)
 
         # instantiate the imported module

@@ -16,8 +16,8 @@ function drawCharts(){
 				interval: $.dataLength
 			},
 			axisY: {
-				minimum: -500,
-				maximum: 3000
+				minimum: $.yMin,
+				maximum: $.yMax
 			},
 			data: [{
 				type: "line",

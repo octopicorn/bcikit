@@ -12,7 +12,7 @@ global:
 modules:
 ###################################################################
   - id: "foo1"
-    class: "ModuleSignalGenerator"
+    class: "SignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
@@ -28,7 +28,7 @@ modules:
 
 ###################################################################
   - id: "foo2"
-    class: "ModuleSignalGenerator"
+    class: "SignalGenerator"
     settings:
       debug: False
       frequency: 3  # Hz (samples per second)
@@ -45,7 +45,7 @@ modules:
 ###################################################################
 #
 #  - id: "foo3"
-#    class: "ModuleWindows"
+#    class: "TimeWindow"
 #    settings:
 #      debug: False
 #      samples_per_window: 500
@@ -64,7 +64,7 @@ modules:
 
 ###################################################################
   - id: "foo4"
-    class: "ModuleClassWindows"
+    class: "TimeWindowClassLabels"
     settings:
       debug: False
     inputs:
@@ -85,7 +85,7 @@ modules:
 
 ###################################################################
 #  - id: "foo5"
-#    class: "ModuleFFT"
+#    class: "FFT"
 #    settings:
 #      debug: False
 #      sampling_rate: 250
@@ -104,7 +104,7 @@ modules:
 
 ###################################################################
 #  - id: "foo6"
-#    class: "ModuleConvert"
+#    class: "Convert"
 #    settings:
 #      debug: False
 #    inputs:
@@ -121,7 +121,7 @@ modules:
 
 ###################################################################
 #  - id: "foo7"
-#    class: "ModuleDownsample"
+#    class: "Downsample"
 #    settings:
 #      formula: "lttb"
 #      percent: 50      # percentage of original data size to downsample to
