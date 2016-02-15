@@ -8,14 +8,20 @@ global:
 
 modules:
 ###################################################################
-  - id: "eeg"
+  - id: "origin1"
     class: "SignalGenerator"
     settings:
       debug: False
       sampling_rate: 250  # Hz (samples per second)
-      range: [-500,3000]   # range of integers, (i.e. [1,10])
-      pattern: "rand"   # rand | sine | files
-      sine_frequency: 20  # Hz (only used with sine)
+      pattern: "files"   # rand | sine | files
+      files: ["data/sample1.data"] # filepath can be either absolute or relative to dir of run.py
+      separator: ","
+      # this will let downstream modules know whether or not timestamp is included
+      # setting this to true means fist column of data will be ignored
+      data_already_contains_timestamp: False
+      # skip_lines_prefix: "%"
+      skip_lines: 5
+      skip_columns: 1
     outputs:
       data:
         message_queues: "eeg"
@@ -30,7 +36,6 @@ modules:
       debug: False
       samples_per_window: 26
       window_overlap: 0
-      #multiplier: 1000
     inputs:
       data:
         name: "eeg"
@@ -43,8 +48,8 @@ modules:
         data_type: "RAW_DATA"
         buffer_size: 0
 
-###################################################################
-  - id: "foo6"
+####################################################################
+  - id: "viz2"
     class: "Convert"
     settings:
       debug: False
@@ -59,4 +64,3 @@ modules:
         message_type: "MATRIX"
         data_type: "RAW_COORDS"
         buffer_size: 0
-
