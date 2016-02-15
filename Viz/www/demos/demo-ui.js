@@ -105,8 +105,8 @@ $(document).ready(function(){
     $.offsetPerChannel = 0;
     $.numChannels = 1;
 
-    $.yMin = -2048;
-    $.yMax = 2048;
+    $.yMin = parseInt($('#yMin').val());
+    $.yMax = parseInt($('#yMax').val());
 
     // bind numChannels dropdown
     $('#numChannelsSelect').change(function(){

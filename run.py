@@ -23,7 +23,7 @@ def parse_args():
                         help="The address of the RabbitMQ message queue you are sending data to.\n"
                              "Use " + RABBITMQ_ADDRESS + " to send data to our hosted service. \n"
                                                          "Otherwise use 'localhost' if running CloudBrain locally")
-    parser.add_argument('-c', '--conf_path', default="./conf.yml",
+    parser.add_argument('-c', '--conf_path', default="./conf/conf.yml",
                         help="Path to your configuration .yml file (relative to the Analysis directory).\n"
                              "Default is ./conf.yml")
 

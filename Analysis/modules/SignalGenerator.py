@@ -24,7 +24,9 @@ class SignalGenerator(ModuleAbstract):
         ModuleAbstract.setup(self)
 
         # time counter, counts number of ticks in current period
-        self.counter = 0;
+        self.period_counter = 0;
+        self.lines_counter = 0;
+        self.total_counter = 0;
 
         # params
         # sampling_rate (Hz)
@@ -35,6 +37,18 @@ class SignalGenerator(ModuleAbstract):
 
         # range
         self.range = self.module_settings["range"] if "range" in self.module_settings else [0,1]
+
+        # separator
+        self.separator = self.module_settings["separator"] if "separator" in self.module_settings else '\t'
+
+        # skip_lines_prefix
+        self.skip_lines_prefix = self.module_settings["skip_lines_prefix"] if "skip_lines_prefix" in self.module_settings else None
+
+        # skip_lines_num
+        self.skip_lines = self.module_settings["skip_lines"] if "skip_lines" in self.module_settings else None
+
+        # skip_columns
+        self.skip_columns = self.module_settings["skip_columns"] if "skip_columns" in self.module_settings else None
 
         # data contains timestamp flag
         self.data_already_contains_timestamp = self.module_settings["data_already_contains_timestamp"] if "data_already_contains_timestamp" in self.module_settings else False
@@ -93,7 +107,8 @@ class SignalGenerator(ModuleAbstract):
         #   print "RANGE: " + str(self.range)
 
     def getNextFile(self):
-        print "************* GET NEXT FILE *******************"
+        if self.debug:
+            print "************* GET NEXT FILE *******************"
         # open the next available file
         self.current_file_index += 1
         # if we have advanced to the next index, and it's bigger than len of file array
@@ -109,26 +124,46 @@ class SignalGenerator(ModuleAbstract):
         message = {"channel_%s" % i: round(self.sine_waves[self.sine_wave_to_use][x],3) for i in xrange(self.num_channels)}
         return message
 
-    def generateFromFiles(self,x):
+    def generateFromFiles(self, x):
         # if no file open, open the next one
         if self.current_file is None:
             self.getNextFile()
 
-
+        # get the next line in file
         nextline = self.current_file.readline()
         if len(nextline) == 0:
             self.getNextFile()
             nextline = self.current_file.readline()
+            self.lines_counter = 0;
 
-        nextline = nextline.strip().split('\t')
-        if self.data_already_contains_timestamp:
+        # increment line number
+        self.lines_counter += 1;
+
+        # Skip line conditions: skip by line number
+        # if we are skipping current, just return none
+        if self.skip_lines and self.lines_counter <= self.skip_lines:
+            return None
+
+        # Skip line conditions: skip by line prefix
+        if self.skip_lines_prefix and nextline.startswith(self.skip_lines_prefix):
+            print "prefix"
+            return None
+
+        # split new line into data by separator
+        nextline = nextline.strip().split(self.separator)
+
+        if self.data_already_contains_timestamp is True:
             # in this case we already have the timestamp, in the 0th position
             timestamp = nextline.pop(0)
-            message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
+            message = {"channel_%s" % i: float(nextline[i]) for i in xrange(len(nextline))}
             message['timestamp'] = timestamp
-        else:
-            # just loop through all the elements in the line, assuming each element = 1 channel sample
-            message = {"channel_%s" % i: int(nextline[i]) for i in xrange(len(nextline))}
+            return message
+
+        if self.skip_columns and self.skip_columns > 0:
+           skipped_columns = nextline.pop(self.skip_columns-1)
+
+        # just loop through all the elements in the line, assuming each element = 1 channel sample
+        message = {"channel_%s" % i: int(float(nextline[i])) for i in xrange(len(nextline))}
         return message
 
     def generateRandom(self,x):
@@ -197,7 +232,7 @@ class SignalGenerator(ModuleAbstract):
             print "********* sleep length: " + str(sleep_length)
 
         # start timer
-        self.counter = 0
+        self.period_counter = 0
         busy_wait_ticks = 0
         time_start_period = time_start_loop = time.time()
 
@@ -207,40 +242,49 @@ class SignalGenerator(ModuleAbstract):
             time.sleep(sleep_length)
             # this gets us most of the way there
 
-            # now do the processing work
+            #
+            #
+            #
+            #  now do the processing work
             # generate message by whatever pattern has been specified
-            message = getattr(self,self.generate_pattern_func)(self.counter)
-            # generate a timestamp if not already present
-            if self.data_already_contains_timestamp is False:
-                message['timestamp'] = int(time.time() * 1000000)
+            message = getattr(self,self.generate_pattern_func)(self.period_counter)
+
+            # increment period counter
+            self.period_counter += 1
+            self.total_counter += 1;
 
             # deliver 'data' output
-            self.write('data', message)
+            if message:
+                # generate a timestamp if not already present
+                if self.data_already_contains_timestamp is False:
+                    message['timestamp'] = int(time.time() * 1000000)
+                # PUBLISH message
+                self.write('data', message)
+
             if self.debug:
                 print message
 
-            # increment counter
-            self.counter += 1
+
 
             # now busy wait until we have reached the end of the wait period
             time_elapsed_loop = time.time() - time_start_loop
             while time_elapsed_loop < max_time_per_loop :
                 # busy wait
-                #print time_elapsed_loop
+                # print time_elapsed_loop
                 time_elapsed_loop = time.time() - time_start_loop
                 busy_wait_ticks = busy_wait_ticks + 1
 
             # when busy-wait while loop is done, we've reached the end of one loop
 
             # see how long it took to get our samples per second
-            if(self.counter == self.sampling_rate):
+            if(self.period_counter == self.sampling_rate):
                 time_elapsed_total = time.time() - time_start_period
                 # debug message
                 if calibration:
                     print str(time_elapsed_total) + " sec to get " + str(self.sampling_rate) + " samples (" + str(busy_wait_ticks) + " busy wait ticks)"
 
-                # reset counter at end of each period
-                self.counter = 0
+                # reset period counter at end of each period
+                self.period_counter = 0
 
                 # alternate sine wave pattern if sine
                 if self.pattern == "sine":
