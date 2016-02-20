@@ -53,8 +53,8 @@ modules:
     class: "Filter"
     settings:
       debug: False
-      notch_filter: "60Hz"
-      bandpass_filter: "1-50Hz"
+      notch_filter: [59.0, 61.0]  # 60Hz
+      bandpass_filter: [7.0, 30.0] # 7-30Hz
     inputs:
       data:
         name: "window"

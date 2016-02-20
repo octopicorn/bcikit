@@ -32,25 +32,24 @@ class Filter(ModuleAbstract):
             print self.LOGNAME + "setup"
 
         # notch
-        self.notch = self.module_settings["notch"] if "notch" in self.module_settings else None
+        self.notch_filter = self.module_settings["notch_filter"] if "notch_filter" in self.module_settings and self.module_settings["notch_filter"] is not False else None
 
         # bandpass
-        self.bandpass = self.module_settings["bandpass"] if "bandpass" in self.module_settings else None
+        self.bandpass_filter = self.module_settings["bandpass_filter"] if "bandpass_filter" in self.module_settings and self.module_settings["bandpass_filter"] is not False else None
 
         # assumed sample rate of OpenBCI
         fs_Hz = 250.0
-
 
         # create the notch filter coefficients (60 Hz)
         """
         For more info, see http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.butter.html#scipy.signal.butter
         Or http://www.mathworks.com/help/signal/ref/butter.html?s_tid=gn_loc_drop#buct3_m
         """
-        notch_boundaries_Hz = np.array([59.0, 61.0])
+        notch_boundaries_Hz = np.array(self.notch_filter)
         self.notch_filter_b, self.notch_filter_a = butter(2,notch_boundaries_Hz/(fs_Hz / 2.0), 'bandstop')
 
         # create the bandpass filter (7-13Hz)
-        bandpass_boundaries_Hz = np.array([7.0, 30.0])
+        bandpass_boundaries_Hz = np.array(self.bandpass_filter)
         self.bandpass_filter_b, self.bandpass_filter_a = butter(2,bandpass_boundaries_Hz/(fs_Hz / 2.0), 'bandstop')
 
 
@@ -62,7 +61,7 @@ class Filter(ModuleAbstract):
 
     def meanFilter(self, channel_data):
         """
-        For more info, see http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.lfilter.html
+        A common step, remove the mean.  This has the effect of centering the data around the mean value.
         """
         return channel_data - channel_data.mean()
 
