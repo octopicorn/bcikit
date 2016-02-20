@@ -1,6 +1,7 @@
 __author__ = 'odrulea'
 from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix, MatrixToBuffer
+import lib.constants as constants
 import json
 import bisect
 import itertools
@@ -84,7 +85,7 @@ class TimeWindowClassLabels(ModuleAbstract):
         # if the input tag is registered as one of our known inputs from conf.yml
         if method.consumer_tag in self.inputs.keys():
             messageType = self.inputs[method.consumer_tag]['message_type']
-            if messageType == self.MESSAGE_TYPE_TIME_SAMPLE:
+            if messageType == constants.MESSAGE_TYPE_TIME_SAMPLE:
                 # use this if the input_feature is an array of json records (i.e. eeg)
                 buffer_content = json.loads(body)
 
@@ -165,7 +166,7 @@ class TimeWindowClassLabels(ModuleAbstract):
                             windowJson = MatrixToBuffer(windowToDeliver)
                             self.write('data', windowJson)
 
-            elif messageType == self.MESSAGE_TYPE_MATRIX:
+            elif messageType == constants.MESSAGE_TYPE_MATRIX:
                 # this type of input is currently unsupported
 
                 # use this if the input_feature is of type matrix (i.e. window)

@@ -30,12 +30,12 @@ modules:
         buffer_size: 0
 
 ###################################################################
-  - id: "viz1"
+  - id: "w1"
     class: "TimeWindow"
     settings:
       debug: False
-      samples_per_window: 26
-      window_overlap: 0
+      samples_per_window: 1250
+      window_overlap: 50
     inputs:
       data:
         name: "eeg"
@@ -49,13 +49,32 @@ modules:
         buffer_size: 0
 
 ####################################################################
+  - id: "f1"
+    class: "Filter"
+    settings:
+      debug: False
+      notch_filter: "60Hz"
+      bandpass_filter: "1-50Hz"
+    inputs:
+      data:
+        name: "window"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "filtered"
+        message_type: "MATRIX"
+        data_type: "RAW_COORDS"
+        buffer_size: 0
+
+####################################################################
   - id: "viz2"
     class: "Convert"
     settings:
       debug: False
     inputs:
       data:
-        name: "window"
+        name: "filtered"
         message_type: "MATRIX"
         data_type: "RAW_DATA"
     outputs:
