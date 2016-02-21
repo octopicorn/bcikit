@@ -76,7 +76,7 @@ function initCharts(){
 var chartColors = [
 '#ff0000',
 '#00ccff',
-'#66ff00',
+'#66aa00',
 '#228800',
 '#ff6600',
 '#00ff00',

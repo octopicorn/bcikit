@@ -15,8 +15,8 @@ var drawCharts = function(){
                 }
             },
             yaxis: {
-                min: 21,
-                max: 66
+				min: $.yMin,
+				max: $.yMax
             },
             xaxis: {show: false}
         });

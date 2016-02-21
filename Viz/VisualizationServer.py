@@ -86,7 +86,7 @@ class VisualizationServer:
                         "scripts":[
                             "/lib/flot/jquery.flot.js",
                             "/lib/flot/jquery.flot.canvas.js",
-                            "/lib/flot/jquery.flot.downsample.js",
+                            #"/lib/flot/jquery.flot.downsample.js",
                             "/demos/eeg/flot/eeg-flot.js"
                         ]
                 },
