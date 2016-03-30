@@ -14,10 +14,10 @@ var drawCharts = function(){
                     lineWidth: 1
                 }
             },
-            yaxis: {
-				min: $.yMin,
-				max: $.yMax
-            },
+            //yaxis: {
+				//min: $.yMin,
+				//max: $.yMax
+            //},
             xaxis: {show: false}
         });
 

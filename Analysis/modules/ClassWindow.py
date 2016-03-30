@@ -8,7 +8,7 @@ import itertools
 import numpy as np
 
 """
-The ClassWindows Module is meant for bounding raw EEG data into epochs by class label.
+The ClassWindow Module is meant for bounding raw EEG data into epochs by class label.
 
 This module performs the kind of windowing used in training phase.  In this scenario, the goal is to collect windows
 in which every datum belongs to the same class label.  This depends upon two inputs:
@@ -41,11 +41,7 @@ deliver it.  The remainder becomes the new accumulator window, to be used with t
 """
 class ClassWindow(ModuleAbstract):
 
-    MODULE_NAME = "Class Windows Module"
-
-    # LOGNAME is a prefix used to prepend to debugging output statements, helps to disambiguate messages since the
-    # modules run on separate threads
-    LOGNAME = "[Analysis Service: Class Windows Module] "
+    MODULE_NAME = "Class Window"
 
     # __init__ is handled by parent ModuleAbstract
 
@@ -60,8 +56,6 @@ class ClassWindow(ModuleAbstract):
         ##if 'num_channels' in self.module_conf['inputs']['data']:
         ##    self.num_channels = self.module_conf['inputs']['data']['num_channels']
         ##self.headers = ['timestamp'] + ['channel_%s' % i for i in xrange(self.num_channels)]
-
-        self.samples_per_window = 500
 
         self.window = np.matrix(np.zeros((self.num_channels,0)))
         self.nextWindowSegment = np.matrix(np.zeros((self.num_channels,0)))

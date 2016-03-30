@@ -9,8 +9,7 @@ import json
 
 class Downsample(ModuleAbstract):
 
-    MODULE_NAME = "Downsample Module"
-    LOGNAME = "[Analysis Service: Downsample Module] "
+    MODULE_NAME = "Downsample"
 
     # __init__ is handled by parent ModuleAbstract
 

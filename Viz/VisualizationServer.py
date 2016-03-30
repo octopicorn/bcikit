@@ -8,10 +8,11 @@ from Viz.Server.Multiplex import MultiplexConnection
 from Viz.Server.Connections import ConnectionPlot, ConnectionClassLabel
 import os
 import yaml
+from lib.constants import colors
 
 class VisualizationServer:
 
-    LOGNAME = "[Visualization Server] "
+    LOGNAME = colors.SILVER + "[Visualization Server] " + colors.ENDC
 
     def __init__(self, debug=False, conf_path='/conf.yml'):
         self.debug = debug

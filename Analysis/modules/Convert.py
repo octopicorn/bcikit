@@ -18,11 +18,7 @@ is checked at startup() to make sure a legal conversion is specified in the conf
 """
 class Convert(ModuleAbstract):
 
-    MODULE_NAME = "Convert Module"
-
-    # LOGNAME is a prefix used to prepaend to debugging output statements, helps to disambiguate messages since the
-    # modules run on separate threads
-    LOGNAME = "[Analysis Service: Convert Module] "
+    MODULE_NAME = "Convert"
 
     # acceptable conversions
     # this dict is structured like this:

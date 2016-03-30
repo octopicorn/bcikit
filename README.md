@@ -99,7 +99,7 @@ defining the order, names of input and output metrics, and any special params us
 For now, the defined analysis modules include:
 - SignalGenerator (generate mock data, either random or sine wave) 
 - TimeWindow (collect raw data into rolling windows/matrices of fixed size, with optional overlap)
-- TimeWindowClassLabels (collect raw data + class labels into rolling windows/matrices of variable size, grouped by class label, no overlap)
+- ClassWindow (collect raw data + class labels into rolling windows/matrices of variable size, grouped by class label, no overlap)
 - Convert (conversions, example: convert matrix of raw data to coordinate pairs (x,y) - used for plotting) 
 - Downsample (decrease number of points while still retaining essential features of graph, used for plotting only)
 - ModuleTest (used as a template for new modules)

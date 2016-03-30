@@ -64,9 +64,9 @@ modules:
 
 ###################################################################
   - id: "foo4"
-    class: "TimeWindowClassLabels"
+    class: "ClassWindow"
     settings:
-      debug: False
+      debug: True
     inputs:
       data:
         name: "eeg"

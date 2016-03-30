@@ -12,7 +12,7 @@ This module runs Fast Fourier Transform (FFT) on an incoming matrix of data, wit
 """
 class FFT(ModuleAbstract):
 
-    MODULE_NAME = "FFT Module"
+    MODULE_NAME = "FFT"
 
     # __init__ is handled by parent ModuleAbstract
 

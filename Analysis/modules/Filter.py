@@ -7,7 +7,7 @@ import bisect
 import itertools
 import numpy as np
 from scipy.signal import lfilter as lfilter
-from scipy.signal import butter as butter
+from lib.utils import FilterCoefficients
 
 """
 This module applies two filters to the data coming through:
@@ -17,11 +17,7 @@ If you are publishing an output, when you are ready to send it to mq, use self.w
 """
 class Filter(ModuleAbstract):
 
-    MODULE_NAME = "Filter Module"
-
-    # LOGNAME is a prefix used to prepend to debugging output statements, helps to disambiguate messages since the
-    # modules run on separate threads
-    LOGNAME = "[Analysis Service: Filter Module] "
+    MODULE_NAME = "Filter"
 
     # __init__ is handled by parent ModuleAbstract
 
@@ -37,21 +33,15 @@ class Filter(ModuleAbstract):
         # bandpass
         self.bandpass_filter = self.module_settings["bandpass_filter"] if "bandpass_filter" in self.module_settings and self.module_settings["bandpass_filter"] is not False else None
 
-        # assumed sample rate of OpenBCI
-        fs_Hz = 250.0
-
         # create the notch filter coefficients (60 Hz)
         """
         For more info, see http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.butter.html#scipy.signal.butter
         Or http://www.mathworks.com/help/signal/ref/butter.html?s_tid=gn_loc_drop#buct3_m
         """
-        notch_boundaries_Hz = np.array(self.notch_filter)
-        self.notch_filter_b, self.notch_filter_a = butter(2,notch_boundaries_Hz/(fs_Hz / 2.0), 'bandstop')
+        self.notch_filter_b, self.notch_filter_a = FilterCoefficients('bandstop',250.0,np.array(self.notch_filter))
 
         # create the bandpass filter (7-13Hz)
-        bandpass_boundaries_Hz = np.array(self.bandpass_filter)
-        self.bandpass_filter_b, self.bandpass_filter_a = butter(2,bandpass_boundaries_Hz/(fs_Hz / 2.0), 'bandstop')
-
+        self.bandpass_filter_b, self.bandpass_filter_a = FilterCoefficients('bandpass',250.0,np.array(self.bandpass_filter))
 
     def filterWindow(self, window, filter_func):
         """

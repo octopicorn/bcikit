@@ -4,6 +4,7 @@ import time
 import random
 import numpy as np
 from lib.constants import *
+import pandas
 
 """
 This module generates a signal and publishes to the message queue.
@@ -16,7 +17,7 @@ This can include the following types of data:
 """
 class SignalGenerator(ModuleAbstract):
 
-    MODULE_NAME = "Signal Generator Module"
+    MODULE_NAME = "Signal Generator"
 
     # __init__ is handled by parent ModuleAbstract
 
@@ -52,6 +53,15 @@ class SignalGenerator(ModuleAbstract):
 
         # data contains timestamp flag
         self.data_already_contains_timestamp = self.module_settings["data_already_contains_timestamp"] if "data_already_contains_timestamp" in self.module_settings else False
+
+        # timestamp_column
+        self.timestamp_column = self.module_settings["timestamp_column"] if "timestamp_column" in self.module_settings else 0
+
+        # class_label_column
+        self.class_label_column = self.module_settings["class_label_column"] if "class_label_column" in self.module_settings else None
+
+        # flag: whether to playback at the samplig_rate. if false, generate as fast as possible
+        self.generate_at_sampling_rate = self.module_settings["generate_at_sampling_rate"] if "generate_at_sampling_rate" in self.module_settings else True
 
         # pattern
         self.pattern = "rand"
@@ -102,6 +112,10 @@ class SignalGenerator(ModuleAbstract):
             # RANDOM PATTERN
             self.generate_pattern_func = "generateRandom"
 
+
+        if self.class_label_column:
+            self.lastClassLabel = None
+
         #if self.debug:
         #   print "SAMPLING_RATE: " + str(self.sampling_rate) + " Hz"
         #   print "RANGE: " + str(self.range)
@@ -118,13 +132,19 @@ class SignalGenerator(ModuleAbstract):
 
         # open the current file
         # print "opening file " + str(self.current_file_index)
-        self.current_file = open(self.file_list[self.current_file_index])
+        fname = self.file_list[self.current_file_index]
+        self.current_file = open(fname)
+
 
     def generateSine(self,x):
         message = {"channel_%s" % i: round(self.sine_waves[self.sine_wave_to_use][x],3) for i in xrange(self.num_channels)}
         return message
 
     def generateFromFiles(self, x):
+        message = None
+        timestamp = None
+        classLabel = None
+
         # if no file open, open the next one
         if self.current_file is None:
             self.getNextFile()
@@ -132,39 +152,54 @@ class SignalGenerator(ModuleAbstract):
         # get the next line in file
         nextline = self.current_file.readline()
         if len(nextline) == 0:
+            print "------------------------------------------------------------------------------------------------------"
+            print "------------------------------------------------------------------------------------------------------"
+            print "------------------------------------------------------------------------------------------------------"
+            print "------------------------------------------------------------------------------------------------------"
+            print "------------------------------------------------------------------------------------------------------"
+            print "REACHED END OF FILE"
+
             self.getNextFile()
             nextline = self.current_file.readline()
-            self.lines_counter = 0;
+            self.lines_counter = 0
 
         # increment line number
-        self.lines_counter += 1;
+        self.lines_counter += 1
 
         # Skip line conditions: skip by line number
         # if we are skipping current, just return none
         if self.skip_lines and self.lines_counter <= self.skip_lines:
-            return None
+            return [message, classLabel, timestamp]
 
         # Skip line conditions: skip by line prefix
         if self.skip_lines_prefix and nextline.startswith(self.skip_lines_prefix):
             print "prefix"
-            return None
+            return [message, classLabel, timestamp]
 
         # split new line into data by separator
-        nextline = nextline.strip().split(self.separator)
+        nextline = np.array(nextline.strip().split(self.separator), dtype=int)
 
+        # TODO deal with edge case of timestamp column coming after class column, may have to use some other strategy besides pop()
+        # for now, it's ok to just pop the classLabel first, then timestamp
+
+        # pop the class label off the line if it's present
+        if self.class_label_column is not None:
+            classLabel = nextline.pop(self.class_label_column)
+
+        # add the timestamp to data if it's not already present
         if self.data_already_contains_timestamp is True:
             # in this case we already have the timestamp, in the 0th position
-            timestamp = nextline.pop(0)
+            timestamp = nextline.pop(self.timestamp_column)
             message = {"channel_%s" % i: float(nextline[i]) for i in xrange(len(nextline))}
             message['timestamp'] = timestamp
-            return message
+            return [message, classLabel, timestamp]
 
         if self.skip_columns and self.skip_columns > 0:
            skipped_columns = nextline.pop(self.skip_columns-1)
 
         # just loop through all the elements in the line, assuming each element = 1 channel sample
         message = {"channel_%s" % i: int(float(nextline[i])) for i in xrange(len(nextline))}
-        return message
+        return [message, classLabel, timestamp]
 
     def generateRandom(self,x):
         if self.outputs['data']['data_type'] == DATA_TYPE_RAW_DATA:
@@ -238,43 +273,69 @@ class SignalGenerator(ModuleAbstract):
 
         while(True):
 
-            # sleep first
-            time.sleep(sleep_length)
-            # this gets us most of the way there
+            if self.generate_at_sampling_rate:
+                # sleep first
+                time.sleep(sleep_length)
+                # this gets us most of the way there
 
             #
             #
             #
             #  now do the processing work
             # generate message by whatever pattern has been specified
-            message = getattr(self,self.generate_pattern_func)(self.period_counter)
+            #classLabel = None
+            classLabel = None;
+            if self.pattern == "files":
+                message,classLabel,timestamp = getattr(self,self.generate_pattern_func)(self.period_counter)
+            else:
+                message = getattr(self,self.generate_pattern_func)(self.period_counter)
 
             # increment period counter
             self.period_counter += 1
-            self.total_counter += 1;
+            self.total_counter += 1
 
             # deliver 'data' output
             if message:
                 # generate a timestamp if not already present
                 if self.data_already_contains_timestamp is False:
-                    message['timestamp'] = int(time.time() * 1000000)
+                    timestamp = int(time.time() * 1000000)
+                    message['timestamp'] = timestamp
                 # PUBLISH message
                 self.write('data', message)
+                if self.debug:
+                    print message
 
-            if self.debug:
-                print message
+            # deliver 'labels' output
+            if classLabel is not None:
+                # if class label has changed, generate a new class label message
+                # and then update lastClassLabel
+                if classLabel != self.lastClassLabel:
+                    class_label_message = {"timestamp":timestamp,"class":classLabel}
+                    self.write('labels', class_label_message)
+                    self.lastClassLabel = classLabel
+                    if self.debug:
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print "******************************************************************************"
+                        print class_label_message
 
+                if self.debug:
+                    print "CLASS: " + classLabel + " TIME: " + timestamp
 
-
-            # now busy wait until we have reached the end of the wait period
-            time_elapsed_loop = time.time() - time_start_loop
-            while time_elapsed_loop < max_time_per_loop :
-                # busy wait
-                # print time_elapsed_loop
+            if self.generate_at_sampling_rate:
+                # now busy wait until we have reached the end of the wait period
                 time_elapsed_loop = time.time() - time_start_loop
-                busy_wait_ticks = busy_wait_ticks + 1
+                while time_elapsed_loop < max_time_per_loop :
+                    # busy wait
+                    # print time_elapsed_loop
+                    time_elapsed_loop = time.time() - time_start_loop
+                    busy_wait_ticks = busy_wait_ticks + 1
 
-            # when busy-wait while loop is done, we've reached the end of one loop
+                # when busy-wait while loop is done, we've reached the end of one loop
 
             # see how long it took to get our samples per second
             if(self.period_counter == self.sampling_rate):

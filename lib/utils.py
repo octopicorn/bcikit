@@ -3,6 +3,7 @@ __author__ = 'odrulea'
 import base64
 import json
 import numpy as np
+from scipy.signal import butter as butter
 
 
 DTYPE_COORD = np.dtype([('x', np.float), ('y', np.float)])
@@ -165,3 +166,8 @@ def ListConfOutputMetrics(conf, prefix=None):
                             metrics.append(metric)
 
     return metrics
+
+def FilterCoefficients(filter_type, sampling_frequency, boundary_frequencies):
+    """
+    """
+    return butter(2,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
