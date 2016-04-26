@@ -3,7 +3,7 @@ import json
 from cloudbrain.subscribers.SubscriberInterface import Subscriber
 from cloudbrain.utils.metadata_info import get_metrics_names
 from cloudbrain.settings import RABBITMQ_ADDRESS
-
+from lib.constants import colors
 
 class PikaSubscriber(Subscriber):
 
@@ -43,7 +43,7 @@ class PikaSubscriber(Subscriber):
         self.queues[metric_id] = self.channel.queue_declare(exclusive=True).method.queue
         self.channel.queue_bind(exchange=key, queue=self.queues[metric_id], routing_key=key)
 
-        print "[Subscriber Started] Queue --> [" + key + "] for input [" + metric_id + "]"
+        print colors.GOLD + "[Subscriber Started] Queue --> [" + key + "] for input [" + metric_id + "]" + colors.ENDC
 
 
   def disconnect(self):

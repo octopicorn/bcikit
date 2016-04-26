@@ -1,29 +1,24 @@
 __author__ = 'odrulea'
 from abc import ABCMeta, abstractmethod
 from lib.PikaSubscriber import PikaSubscriber
-#from cloudbrain.subscribers.PikaSubscriber import PikaSubscriber
 from cloudbrain.publishers.PikaPublisher import PikaPublisher
 from cloudbrain.utils.metadata_info import get_num_channels
-import lib.constants
+from lib.constants import colors
 
 class ModuleAbstract(object):
     __metaclass__ = ABCMeta
 
     MODULE_NAME = "Abstract"
 
-    def __init__(self, device_name, device_id, rabbitmq_address, module_conf={}, global_conf={}):
+    def __init__(self, device_name, device_id, rabbitmq_address, module_conf={}, global_conf={}, module_index=0):
         """
         global constructor for all module classes, not meant to be overwritten by subclasses
-        :param device_name:
-        :param device_id:
-        :param rabbitmq_address:
-        :param moduleConf:
-        :return:
         """
+        self.color = colors.CYCLE[module_index % 10]
 
         # LOGNAME is a prefix used to prepaend to debugging output statements, helps to disambiguate messages since the
         # modules run on separate threads
-        self.LOGNAME = "[Analysis Service: " + self.MODULE_NAME + "] "
+        self.LOGNAME = self.color + "[Module: " + self.MODULE_NAME + "] " + colors.ENDC
 
         # set global properties common to all
         self.device_name = device_name
@@ -74,6 +69,11 @@ class ModuleAbstract(object):
         # call setup()
         self.setup()
 
+    def extractSettings(self, all_settings, settings_to_extract):
+
+        for key, default_value in settings_to_extract.iteritems():
+            #print "setting", key
+            self.__dict__[key] = all_settings[key] if key in all_settings else default_value
 
     def setup(self):
         """
@@ -144,7 +144,7 @@ class ModuleAbstract(object):
         # unleash the hounds!
         if len(self.publishers):
             if self.debug:
-                print "[" + self.MODULE_NAME + "] starting publishers"
+                print self.LOGNAME + " starting publishers"
 
             for output_key, output_message_queues in self.publishers.iteritems():
                 for output_message_queue, publisher in output_message_queues.iteritems():
@@ -160,7 +160,7 @@ class ModuleAbstract(object):
 
         # it begins!
         if self.subscriber and self.debug:
-            print "[" + self.MODULE_NAME + "] starting subscribers"
+            print self.LOGNAME + " starting subscribers"
 
         self.subscriber.connect()
         self.subscriber.consume_messages(self.consume)

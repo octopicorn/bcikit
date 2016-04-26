@@ -8,7 +8,7 @@ import os
 import yaml
 import time
 import threading
-import sys
+from lib.constants import colors
 
 _SUPPORTED_DEVICES = get_supported_devices()
 _SUPPORTED_METRICS = get_supported_metrics()
@@ -24,7 +24,7 @@ class AnalysisService(object):
     def __init__(self, device_name, device_id, rabbitmq_address=None, conf_path=None):
 
         if rabbitmq_address is None:
-            raise ValueError(self.LOGNAME + "Pika subscriber needs to have a rabbitmq address!")
+            raise ValueError(colors.FAIL + self.LOGNAME + "Pika subscriber needs to have a rabbitmq address!" + colors.ENDC)
 
         # set vars
         self.device_name = device_name
@@ -58,16 +58,17 @@ class AnalysisService(object):
 
     def start(self):
 
-        print self.LOGNAME + "Collecting data ... Ctl-C to stop."
+        print colors.BG_RASPBERRY + self.LOGNAME + "Collecting data ... Ctl-C to stop." + colors.ENDC
 
         # loop through each module and start them
         # passing the settings from conf file to each
         if "modules" in self.conf and len(self.conf["modules"]):
+            module_i = 0;
             for module_conf in self.conf["modules"]:
                 # start each module
-                self.launchModule(module_conf, self.device_name, self.device_id, self.rabbitmq_address)
-            if self.debug:
-                print "-------------------------------------\n\n"
+                self.launchModule(module_conf, self.device_name, self.device_id, self.rabbitmq_address, module_i)
+                module_i += 1
+
         else:
             print self.LOGNAME + "No modules defined for analysis"
 
@@ -75,13 +76,13 @@ class AnalysisService(object):
         while True:
             time.sleep(1)
 
-    def launchModule(self, module_conf, device_name, device_id, rabbitmq_address):
+    def launchModule(self, module_conf, device_name, device_id, rabbitmq_address, module_index):
 
         # module classname is required
         if 'class' in module_conf:
             moduleClassName = module_conf['class']
         else:
-            raise ValueError(self.LOGNAME + "ERROR: class not defined for module: " + str(module_conf))
+            raise ValueError(colors.FAIL + self.LOGNAME + "ERROR: class not defined for module: " + str(module_conf) + colors.ENDC)
 
         # get module parameters for any operation at the service level (optional)
         if 'settings' in module_conf:
@@ -90,10 +91,9 @@ class AnalysisService(object):
             if 'debug' in module_settings and module_settings['debug'] == True:
                 # if any of the modules have debug turned on, turn on the service debug too
                 self.debug = True
-                print "-------------------------------------\n" \
-                     "" + self.LOGNAME + "STARTING...\n" \
-                     "Module: " + moduleClassName + "\n" \
-                    "Configuration: " + str(module_conf) + "\n"
+                print colors.CYAN + \
+                     "\nModule: " + moduleClassName + "\n" \
+                    "Configuration: " + str(module_conf) + "\n" + colors.ENDC
 
         module_id = None
         if 'id' in module_conf:
@@ -101,13 +101,12 @@ class AnalysisService(object):
 
         # dynamically import the module
         module_filepath = os.path.join(self.location + "/modules", moduleClassName+'.py')
-        print module_filepath
         py_mod = imp.load_source(moduleClassName, module_filepath)
 
         # instantiate the imported module
         moduleInstance = getattr(py_mod, moduleClassName)(device_name=device_name, device_id=device_id,
                                                      rabbitmq_address=rabbitmq_address, module_conf=module_conf,
-                                                     global_conf=self.conf)
+                                                     global_conf=self.conf, module_index=module_index)
 
 
         # all modules should implement start() and stop()

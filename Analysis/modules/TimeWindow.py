@@ -15,8 +15,7 @@ simple buffering on raw data, if you set the overlap to 0 for example.
 
 class TimeWindow(ModuleAbstract):
     
-    MODULE_NAME = "Windows Module"
-    LOGNAME = "[Analysis Service: Windows Module] "
+    MODULE_NAME = "Windows"
 
     # __init__ is handled by parent ModuleAbstract
 

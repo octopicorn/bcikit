@@ -8,7 +8,7 @@ import itertools
 import numpy as np
 
 """
-The ClassWindows Module is meant for bounding raw EEG data into epochs by class label.
+The ClassWindow Module is meant for bounding raw EEG data into epochs by class label.
 
 This module performs the kind of windowing used in training phase.  In this scenario, the goal is to collect windows
 in which every datum belongs to the same class label.  This depends upon two inputs:
@@ -39,13 +39,9 @@ To do this, we look at the timestamp of the new incoming class label, to see whe
 window we've collected so far.  Then, using that time marker, we slice the old data, label with the old class, and
 deliver it.  The remainder becomes the new accumulator window, to be used with the new class label.
 """
-class TimeWindowClassLabels(ModuleAbstract):
+class ClassWindow(ModuleAbstract):
 
-    MODULE_NAME = "Class Windows Module"
-
-    # LOGNAME is a prefix used to prepend to debugging output statements, helps to disambiguate messages since the
-    # modules run on separate threads
-    LOGNAME = "[Analysis Service: Class Windows Module] "
+    MODULE_NAME = "Class Window"
 
     # __init__ is handled by parent ModuleAbstract
 
@@ -60,8 +56,6 @@ class TimeWindowClassLabels(ModuleAbstract):
         ##if 'num_channels' in self.module_conf['inputs']['data']:
         ##    self.num_channels = self.module_conf['inputs']['data']['num_channels']
         ##self.headers = ['timestamp'] + ['channel_%s' % i for i in xrange(self.num_channels)]
-
-        self.samples_per_window = 500
 
         self.window = np.matrix(np.zeros((self.num_channels,0)))
         self.nextWindowSegment = np.matrix(np.zeros((self.num_channels,0)))
@@ -79,9 +73,6 @@ class TimeWindowClassLabels(ModuleAbstract):
         """
         begin looping through the buffer coming in from the message queue subscriber
         """
-
-
-
         # if the input tag is registered as one of our known inputs from conf.yml
         if method.consumer_tag in self.inputs.keys():
             messageType = self.inputs[method.consumer_tag]['message_type']
@@ -177,8 +168,3 @@ class TimeWindowClassLabels(ModuleAbstract):
                     print buffer_content
                     print
                     print
-
-
-
-
-

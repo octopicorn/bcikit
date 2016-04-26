@@ -11,11 +11,7 @@ This module saves incoming data to durable storage.
 """
 class Record(ModuleAbstract):
 
-    MODULE_NAME = "Record Module"
-
-    # LOGNAME is a prefix used to prepaend to debugging output statements, helps to disambiguate messages since the
-    # modules run on separate threads
-    LOGNAME = "[Analysis Service: Record Module] "
+    MODULE_NAME = "Record"
 
     # __init__ is handled by parent ModuleAbstract
 

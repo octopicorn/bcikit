@@ -1,0 +1,106 @@
+###################################################################
+# This processing chain is for testing visualization
+# Specifically, EEG using fixed windows, with coords & downsampling
+#
+###################################################################
+global:
+  num_channels: 59  # how many outputs to produce (default to device if specified, or 1 if not)
+
+modules:
+###################################################################
+  - id: "origin1"
+    class: "SignalGenerator"
+    settings:
+      debug: False
+      sampling_rate: 100  # Hz (samples per second)
+      pattern: "files"   # rand | sine | files
+      files: ["/Users/odrulea/Documents/docs/gradschool/BCI/datasets/bci4/100Hz/train/bcikit_parsed/ds1a.txt"] # filepath can be either absolute or relative to dir of run.py
+      #separator: ","
+      # this will let downstream modules know whether or not timestamp is included
+      # setting this to true means timestamp data column will be ignored
+      # (by default this is assumed to be first col)
+      #data_already_contains_timestamp: True
+      #timestamp_column: 8 # based on column starting number of 0
+      class_label_column: 59 # based on column starting number of 0
+      # skip_lines_prefix: "%"
+      #skip_lines: 1
+      #skip_columns: 0
+      generate_at_sampling_rate: False # if false, fast-forward through file as fast as possible, not at original sampling rate
+
+    outputs:
+      data:
+        message_queues: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+      labels:
+        message_queues: "motor_class"
+        message_type: "TIME_SAMPLE"
+        data_type: "CLASS_LABELS"
+        buffer_size: 0
+
+###################################################################
+  - id: "foo4"
+    class: "ClassWindow"
+    settings:
+      debug: False
+    inputs:
+      data:
+        name: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+      labels:
+        name: "motor_class"
+        message_type: "TIME_SAMPLE"
+        data_type: "CLASS_LABELS"
+    outputs:
+      data:
+        message_queues: "motor_class_windows"
+        message_type: "MATRIX"
+        data_type: "LABELED_DATA"
+        buffer_size: 0
+
+####################################################################
+  - id: "foo5"
+    class: "CSP"
+    settings:
+      debug: True
+      bandpass_filter_range: [7.0,23.0]
+      notch_filter: False # [59.0,61.0]
+      calculation_threshold: 80 # how many epochs for each class label before we trigger calculation of CSP
+      class_labels: [-1,1]
+      class_label_channel: 59 # based on channel starting number of 0
+      epoch_size: 50
+      sampling_rate: 100  # Hz (samples per second)
+      num_spatial_filters: 4
+      test_file: "/Users/odrulea/Documents/docs/gradschool/BCI/datasets/bci4/100Hz/test/bcikit_parsed/ds1a.txt"
+      optimization_trace: True
+      plot: False
+
+    inputs:
+      data:
+        name: "motor_class_windows"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+    outputs:
+      data:
+        message_queues: "spatial_filters"
+        message_type: "MATRIX"
+        data_type: "RAW_DATA"
+        buffer_size: 0
+####################################################################
+#  - id: "viz2"
+#    class: "Convert"
+#    settings:
+#      debug: False
+#    inputs:
+#      data:
+#        name: "window"
+#        message_type: "MATRIX"
+#        data_type: "RAW_DATA"
+#    outputs:
+#      data:
+#        message_queues: "viz_eeg"
+#        message_type: "MATRIX"
+#        data_type: "RAW_COORDS"
+#        buffer_size: 0

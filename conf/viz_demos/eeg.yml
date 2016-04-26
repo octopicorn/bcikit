@@ -4,31 +4,31 @@
 #
 ###################################################################
 global:
-  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+  num_channels: 8  # how many outputs to produce (default to device if specified, or 1 if not)
 
 modules:
 ###################################################################
-  - id: "origin1"
-    class: "SignalGenerator"
-    settings:
-      debug: False
-      sampling_rate: 250  # Hz (samples per second)
-      range: [-500,3000]   # range of integers, (i.e. [1,10])
-      pattern: "rand"   # rand | sine | files
-      sine_frequency: 20  # Hz (only used with sine)
-    outputs:
-      data:
-        message_queues: "eeg"
-        message_type: "TIME_SAMPLE"
-        data_type: "RAW_DATA"
-        buffer_size: 0
+#  - id: "origin1"
+#    class: "SignalGenerator"
+#    settings:
+#      debug: False
+#      sampling_rate: 250  # Hz (samples per second)
+#      range: [-500,1000]   # range of integers, (i.e. [1,10])
+#      pattern: "rand"   # rand | sine | files
+#      sine_frequency: 20  # Hz (only used with sine)
+#    outputs:
+#      data:
+#        message_queues: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#        buffer_size: 0
 
 ###################################################################
   - id: "viz1"
     class: "TimeWindow"
     settings:
       debug: False
-      samples_per_window: 26
+      samples_per_window: 20
       window_overlap: 0
     inputs:
       data:
