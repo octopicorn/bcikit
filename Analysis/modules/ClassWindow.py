@@ -73,9 +73,6 @@ class ClassWindow(ModuleAbstract):
         """
         begin looping through the buffer coming in from the message queue subscriber
         """
-
-
-
         # if the input tag is registered as one of our known inputs from conf.yml
         if method.consumer_tag in self.inputs.keys():
             messageType = self.inputs[method.consumer_tag]['message_type']
@@ -171,8 +168,3 @@ class ClassWindow(ModuleAbstract):
                     print buffer_content
                     print
                     print
-
-
-
-
-

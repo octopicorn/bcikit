@@ -184,18 +184,22 @@ class SignalGenerator(ModuleAbstract):
 
         # pop the class label off the line if it's present
         if self.class_label_column is not None:
-            classLabel = nextline.pop(self.class_label_column)
+            classLabel = nextline[self.class_label_column]
+            nextline = np.delete(nextline, self.class_label_column)
 
         # add the timestamp to data if it's not already present
         if self.data_already_contains_timestamp is True:
             # in this case we already have the timestamp, in the 0th position
-            timestamp = nextline.pop(self.timestamp_column)
+            timestamp = nextline[self.timestamp_column]
+            nextline = np.delete(nextline, self.timestamp_column)
             message = {"channel_%s" % i: float(nextline[i]) for i in xrange(len(nextline))}
             message['timestamp'] = timestamp
             return [message, classLabel, timestamp]
 
-        if self.skip_columns and self.skip_columns > 0:
-           skipped_columns = nextline.pop(self.skip_columns-1)
+        if self.skip_columns and self.skip_columns:
+            nextline = np.delete(nextline, self.skip_columns)
+            if self.debug:
+                print "Skipping columns", self.skip_columns
 
         # just loop through all the elements in the line, assuming each element = 1 channel sample
         message = {"channel_%s" % i: int(float(nextline[i])) for i in xrange(len(nextline))}

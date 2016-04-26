@@ -4,9 +4,14 @@ import base64
 import json
 import numpy as np
 from scipy.signal import butter as butter
+import time
+import pandas as pd
+import mne
+from collections import Counter
 
 
 DTYPE_COORD = np.dtype([('x', np.float), ('y', np.float)])
+
 def MatrixToBuffer(ndarray, dtype = None):
     """
     In order to get a numpy matrix (array of arrays) into a json serializable form, we have to do a base64 encode
@@ -171,3 +176,81 @@ def FilterCoefficients(filter_type, sampling_frequency, boundary_frequencies):
     """
     """
     return butter(2,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
+
+def BCIFileToEpochs(filename, num_channels, epoch_size=50, filter_class_labels=[-1,1], max_epochs=9000, mode="c"):
+    """
+
+    :param filename:
+    :param num_channels:
+    :param epoch_size:
+    :param mode:  {"", "
+    :return:
+    """
+    epochsCounter = Counter()
+
+    start = time.clock()
+    window = pd.read_table(filename, header=None, dtype=np.float)
+    end = time.clock()
+    #print "loaded test file with pandas in ", str(end - start),"seconds"
+
+    raw_data = window.iloc[:,:num_channels].values.T
+    print "channel data", raw_data.shape
+
+    class_labels = window[:][num_channels].values
+    print "class labels", class_labels.shape, class_labels
+
+    total_num_samples = len(class_labels)
+    start = 0
+    end = int(epoch_size)
+    current_pos = start
+
+    """
+    initialize a standard 3-dim array just to have a data structure that is standard with other libs
+    In most other libraries, CSP uses a 3 dimensional epoch input: (n_epochs, n_channels, n_times)
+    """
+    epochs = np.zeros((0,num_channels,epoch_size))
+    y = np.array([])
+
+    # find first index of each class switch
+    window_start_indexes = np.nonzero(np.r_[1,np.diff(class_labels)[:-1]])
+    num_windows = len(window_start_indexes[0])
+    for i in xrange(num_windows):
+        start_index = window_start_indexes[0][i]
+        if start_index != window_start_indexes[0][-1] :
+            end_index = window_start_indexes[0][i+1]
+        # else:
+        #     end_index = None
+
+            if epochs.shape[0] < max_epochs and int(class_labels[start_index]) in filter_class_labels:
+
+                #print "next window from ", start_index, "to", end_index
+                #print class_labels[start_index:end_index]
+
+                # save the epoch to the standard 3 dim data structure
+                nextWindow = np.array(raw_data[:,start_index:end_index])
+                num_epochs = np.floor_divide(nextWindow.shape[1], epoch_size)
+                #print "will split ",class_labels[start_index],"window of len", nextWindow.shape[1], "into",num_epochs,"epochs of size", epoch_size
+
+                for j in xrange(num_epochs):
+                    if epochs.shape[0] < max_epochs:
+                        epochsCounter[class_labels[start_index]] += 1
+                        y = np.append(y, class_labels[start_index])
+                        start_epoch = start_index + (epoch_size * j)
+                        end_epoch = start_epoch + epoch_size
+                        nextEpoch = np.array(raw_data[:,start_epoch:end_epoch])
+                        epochs = np.append(epochs, [nextEpoch], axis=0)
+
+    print "test file retrieved epochs:", epochs.shape
+    print "test file retrieved y:", len(y)
+    print epochsCounter
+    # chop into epochs and append each epoch to running collection
+    # while current_pos <= window_length and epochs.shape[0] < num_epochs:
+    #
+    #     # save class label to the y array (will be used for the classifier)
+
+    #
+    #     # save the epoch to the standard 3 dim data structure
+    #     nextEpoch = np.array(raw_data[:,start:end])
+    #     epochs = np.append(epochs, [nextEpoch], axis=0)
+    #
+    return [epochs, y]

@@ -69,6 +69,11 @@ class ModuleAbstract(object):
         # call setup()
         self.setup()
 
+    def extractSettings(self, all_settings, settings_to_extract):
+
+        for key, default_value in settings_to_extract.iteritems():
+            #print "setting", key
+            self.__dict__[key] = all_settings[key] if key in all_settings else default_value
 
     def setup(self):
         """

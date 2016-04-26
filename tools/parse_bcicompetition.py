@@ -6,13 +6,14 @@ import glob
 import math
 import os
 import pandas
+import time
 
 
 """
 This is a utility file that can be used to parse datasets in which raw data is separate from class labels, following the model established by the BCI Competition IV
 
 Example usage:
-python tools/parse_bcicompetition.py -d /path/to/train_data
+python tools/parse_bcicompetition.py -d /path/to/test_data
 
 There is a flag -m used to specify "mode"
 There are 3 possible values:
@@ -23,7 +24,7 @@ testprint - used to output to terminal output the content needed to convert "tru
 
 class MRKParser(object):
 	def __init__(self, fname, class_length, mode="train"):
-		self.mrk_file_class_length = class_length
+		self.mrk_file_class_length = int(class_length)
 		self.mrk_file_mode = mode
 
 
@@ -63,9 +64,7 @@ class MRKParser(object):
 			self.mrk_file_current_class = int(classLabel)
 			return classLabel
 
-
-
-		if self.mrk_file_next_index is None or self.mrk_file_class_length_counter >= self.mrk_file_class_length:
+		if (self.mrk_file_class_length_counter > self.mrk_file_class_length) or (self.mrk_file_next_index is None):
 			"""
 			if we've either 1) just started new file, or 2) reached end of current class:
 			- revert/init class to default of 0, this class label will be broadcast until next class is detected
@@ -87,20 +86,22 @@ class MRKParser(object):
 			if self.mrk_file_next_row < self.mrk_file_data_len:
 				self.mrk_file_next_index = self.mrk_file_data[0][self.mrk_file_next_row]
 				self.mrk_file_next_class = self.mrk_file_data[1][self.mrk_file_next_row]
+				print "next class label coming at: ",self.mrk_file_next_index
 
-			print "parsing class tag", self.mrk_file_next_row, self.mrk_file_next_class
-
-		if currentLineIndex >= self.mrk_file_next_index:
+		# only increment counter if we're currently "in" an actual class (i.e. 	not 0)
+		if self.mrk_file_current_class is not 0:
+			#print "counting",self.mrk_file_class_length_counter
+			self.mrk_file_class_length_counter += 1
+		elif currentLineIndex >= self.mrk_file_next_index:
 			"""
 			if the line number passed in hit the next class starting point, we've just started that next class
 			"""
 			self.mrk_file_current_class = int(self.mrk_file_next_class)
+			print "---------------------------------------"
+			print currentLineIndex, self.mrk_file_class_length_counter, ">", self.mrk_file_class_length
+			print "hit class tag", self.mrk_file_current_class
 
-
-		# only increment counter if we're currently "in" an actual class (i.e. 	not 0)
-		if self.mrk_file_current_class is not 0:
-			self.mrk_file_class_length_counter += 1
-
+		#time.sleep(.01)
 		return self.mrk_file_current_class
 
 
@@ -162,11 +163,11 @@ def main():
 	# loop through all files in source dir
 	os.chdir(input_dir)
 	for fname in glob.glob("*_cnt*"):
-		output_fname = fname.replace("_cnt", "_bcikit_parsed")
+		output_fname = fname.replace("_cnt", "")
+		output_fname = output_fname.replace("BCICIV_", "")
 		print "---------------------------------------------"
 		print fname, " > ", output_fname
 		output_filepath = os.path.join(output_dir,output_fname)
-		print "mode:",opts.mode
 		parseFile(fname, output_filepath, opts.mode, opts.classLength)
 
 	print "FINISHED"
