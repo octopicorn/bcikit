@@ -27,6 +27,9 @@ def parse_args():
                         help="Path to your configuration .yml file (relative to the Analysis directory).\n"
                              "Default is ./conf.yml")
 
+    parser.add_argument('-v', '--viz', default=1, help="Boolean flag: whether or not to run visualization server.\n"
+                                                       "0 = do not run server. (Default = 1)")
+
     opts = parser.parse_args()
 
     return opts
@@ -38,26 +41,32 @@ def main():
     device_id = opts.device_id
     cloudbrain_address = opts.mq_host
     conf_path = opts.conf_path
+    viz = opts.viz
 
 
     run(device_name,
         device_id,
         cloudbrain_address,
-        conf_path
+        conf_path,
+        viz
         )
 
 def run(device_name='muse',
         device_id=MOCK_DEVICE_ID,
         cloudbrain_address=RABBITMQ_ADDRESS,
-        conf_path=None
+        conf_path=None,
+        viz=True
         ):
 
     # start visualization server in a separate subprocess
     # has to be done in a subprocess because server is a blocking, infinite loop
-    vizServer = VisualizationServer(debug=True, conf_path=conf_path)
-    p1 = Process(target=vizServer.start)
-    p1.daemon = True
-    p1.start()
+    if viz == 1:
+        vizServer = VisualizationServer(debug=True, conf_path=conf_path)
+        p1 = Process(target=vizServer.start)
+        p1.daemon = True
+        p1.start()
+    else:
+        print "*** vizualization server disabled ***"
 
     # start analysis processing chain
     service = AnalysisService(

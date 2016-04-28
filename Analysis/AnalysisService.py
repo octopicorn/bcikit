@@ -58,7 +58,7 @@ class AnalysisService(object):
 
     def start(self):
 
-        print colors.BG_RASPBERRY + self.LOGNAME + "Collecting data ... Ctl-C to stop." + colors.ENDC
+        print colors.SILVER + self.LOGNAME + "Collecting data ... Ctl-C to stop." + colors.ENDC
 
         # loop through each module and start them
         # passing the settings from conf file to each

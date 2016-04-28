@@ -8,6 +8,7 @@ from lib.utils import FilterCoefficients, BCIFileToEpochs
 from scipy.signal import lfilter
 from scipy.linalg import eigh
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.cross_validation import cross_val_score
 from mne.decoding import CSP as mneCSP
 from lib.constants import colors
 from collections import Counter
@@ -46,7 +47,8 @@ class CSP(ModuleAbstract):
             'sampling_rate': 250,
             'separator': '\t',
             'test_file': None,
-            'plot': False
+            'plot': False,
+            'include_electrodes': None
         })
 
         # sampling_rate (Hz)
@@ -115,10 +117,7 @@ class CSP(ModuleAbstract):
                     if self.class_label_channel:
                         window = np.delete(window, (self.class_label_channel), axis=0)
 
-                    #if self.debug:
-                        #print "."
-
-                        #print "incoming window of class", classLabel, window.shape
+                    #print "incoming window of class", classLabel, window.shape
 
                     # apply IIR filters to each channel row
                     window = np.apply_along_axis( self.filterChannelData, axis=1, arr=window )
@@ -205,12 +204,9 @@ class CSP(ModuleAbstract):
         # actually it turns out that cov() function already does this internally
 
         # get normalized covariance
-        #EE = np.dot(epoch, epoch.T)
-        #cov1 = np.divide(EE,np.trace(EE))
-
-        # get standard covariance, nothing fancy
-        cov2 = np.cov(epoch)
-        return cov2
+        EE = np.dot(epoch, epoch.T)
+        cov1 = np.divide(EE,np.trace(EE))
+        return cov1
 
     def calculateCSPFilters(self):
         """
@@ -244,11 +240,11 @@ class CSP(ModuleAbstract):
 
         # calculate mean covariances for each class
         for epoch in class1_epochs:
-            cov1  += self.calculateEpochCovariance(epoch)
+            cov1  += np.cov(epoch)
         cov1 /= self.num_channels
 
         for epoch in class2_epochs:
-            cov2  += self.calculateEpochCovariance(epoch)
+            cov2  += np.cov(epoch)
         cov2 /= self.num_channels
 
         # if self.debug:
@@ -305,71 +301,51 @@ class CSP(ModuleAbstract):
         # pick the top n spatial filters
         return self.spatial_filters
 
-    def printChart(self):
-        if 1 > 2:
-            fname = '/Users/odrulea/Documents/docs/gradschool/BCI/python/data/output.data'
-            if os.path.isfile(fname):
-                print "removed file"
-                os.remove(fname)
-            else:
-                print "no such file"
+    def printChart(self, epochs, class_labels, fname='foo.pdf', dim=3):
 
-            with open(fname, 'w') as csvfile:
-                #writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+        print colors.RED
+        print "--------------------------------"
+        print "Printing chart"
 
-                fig, axes = plt.subplots(nrows=self.num_channels, ncols=1)
-                chart_x = range(0, len(tags))
+        fname = '/Users/odrulea/tmp/' + fname
+        print "[Save Graph to file]",fname
 
-                filter_index = 0
-                for spatial_filter in self.spatial_filters:
+        if dim == 3:
+            trials,channels,samples = epochs.shape
+            print "trials:",trials,"channels:",channels,"samples:",samples
 
-                    # make a vector to hold final result of combined (summed) data after filters applied
-                    transformed_x = np.zeros(test_window.shape[1])
-
-                    # loop through all channels
-                    channel_index = 0
-                    #print "****************************"
-                    #print "test_window", test_window.shape
-                    #print "spatial filter", filter_index, spatial_filter.shape
-                    #print test_window[0]
-                    for channel in test_window:
-                        # print "row_num", channel_index
-                        # print "spatial filter", spatial_filter[channel_index]
-                        # print "channel len", len(channel), channel
-
-                        # apply spatial filter appropriate to the channel to apply the filter to original channel data
-                        # then add the result to the filtered channels summation
-                        transformed_x += spatial_filter[channel_index] * channel
-                        #print "transformed_x", type(transformed_x.astype(int))
-                        channel_index += 1
+            chart_data = np.reshape(epochs.swapaxes(0,1),(channels,trials*samples))
+            print chart_data.shape
 
 
-                    # print "------------------------------------------"
-                    # print colors.BOLD_CYAN
-                    # print "plotting spatial filter: index",filter_index
-                    # print "X",transformed_x.shape
-                    # print "y",len(tags)
-                    # print colors.ENDC
+            fig, axes = plt.subplots(nrows=channels, ncols=1)
+            chart_x = np.arange(trials*samples)
+            chart_class_labels = np.zeros(trials*samples)
+            print class_labels
+            for i in xrange(len(class_labels)):
+                start = (i*samples)
+                end = (i+1)*samples
+                chart_class_labels[start:end] = class_labels[i]
+                print "chart_class_labels[",start,":",end,"] = ",class_labels[i]
 
-                    # plot the transform
-                    # plt.subplot(8,1,filter_index+1)
-                    # plt.plot(chart_x, transformed_x, 'r', linewidth=1)
-                    # plt.fill_between(chart_x, tags*100000 , facecolor='green', alpha=0.3)
+            print "chart_data:",len(chart_data)
+            #print "y", chart_class_labels.shape, chart_class_labels
 
-                    #writer.writerow(transformed_x.astype(float))
 
-                    filter_index += 1
 
-                # show the multi-chart with all transforms
-                #plt.show()
+            for chart_index in xrange(channels):
+                # plot the transform
+                plt.subplot(channels,1,chart_index+1)
+                plt.plot(chart_x, chart_data[chart_index,:], 'r', linewidth=1)
 
-                #writer.writerow(tags)
+                # min/max
+                class_multiplier = max(abs(np.amin(chart_data[chart_index,:])), abs(np.amax(chart_data[chart_index,:])))
+                #print "class_mulitplier", class_multiplier, (chart_class_labels*class_multiplier)[275:350]
+                plt.fill_between(chart_x, chart_class_labels*class_multiplier , facecolor='green', alpha=0.3)
 
-            # print "EXITING NOW"
-            # thread.interrupt_main()
-            # os._exit(1)
-            # exit()
-
+        # have to save - can't show() in multi-threaded context
+        plt.savefig(fname)
+        print colors.ENDC
 
     def selfEvaluation(self):
 
@@ -380,7 +356,7 @@ class CSP(ModuleAbstract):
 
         self.y = np.array(self.y)
         self.epochs = np.array(self.epochs)
-        # print "y", self.y.shape
+
 
         # calc dot product of spatial filters
         self.X = np.asarray([np.dot(self.spatial_filters, epoch) for epoch in self.epochs])
@@ -393,12 +369,23 @@ class CSP(ModuleAbstract):
 
         lda = LinearDiscriminantAnalysis()
         lda = lda.fit(self.X, self.y)
-        score = lda.score(self.X, self.y)
 
-        print "LDA training score:",score
+        print "LDA training score:", lda.score(self.X, self.y)
+
+        k = 10
+        print
+        print colors.SILVER
+        print "cross-validation with k=",k,"folds"
+        xval = cross_val_score(lda, self.X, self.y, cv=k)
+        print xval
+        print "mean:", xval.mean()
+
+        print colors.GOLD
         print "-----------------------------------------------------------------"
 
         print "Testing Phase: feeding test data to classifier"
+
+
 
         # pandas is the fastest, numpy loadtxt was 10x slower
         start = time.clock()
@@ -406,26 +393,33 @@ class CSP(ModuleAbstract):
             filename=self.test_file,
             num_channels=self.num_channels,
             max_epochs=self.calculation_threshold*2,
-            filter_class_labels=self.class_labels,
-            epoch_size=self.epoch_size)
+            filter_class_labels=[-1,1], #self.class_labels,
+            epoch_size=self.epoch_size,
+            include_electrodes=self.include_electrodes
+        )
         end = time.clock()
         print "loaded test file in ", str(end - start),"seconds"
-        print "test epochs", test_epochs.shape
 
         # apply IIR filters to each channel row
         test_epochs = np.apply_along_axis( self.filterChannelData, axis=1, arr=test_epochs )
         # assemble y
         test_y = np.array(test_y)
-        print "test y", test_y.shape
 
         # assemble X
         test_epochs = np.array(test_epochs)
+
         # calc dot product of spatial filters
         test_X = np.asarray([np.dot(self.spatial_filters, epoch) for epoch in test_epochs])
+        print "test_X before log variance", test_X.shape
+
+        ########################
+        # CHART
+        self.printChart(test_X, test_y)
 
         # compute features (mean band power)
         # compute log variance
         test_X = np.log((test_X ** 2).mean(axis=2))
+        print "test_X after log variance", test_X.shape
 
         print "-----------------------------------------------------------------"
         predictions = lda.predict(test_X)
@@ -442,18 +436,17 @@ class CSP(ModuleAbstract):
             else:
                 total_wrong += 1.
 
-        print
+        print "test",self.test_file
         print "bandpass filter", self.bandpass_filter_range
         print "num_epochs per class", self.calculation_threshold
         print "epoch_size", self.epoch_size
         print "CSP filters:", self.num_spatial_filters
 
-        print
-        print "total right:", total_right,"total_wrong:", total_wrong,"out of", total_predictions
+        # print "total right:", total_right,"total_wrong:", total_wrong,"out of", total_predictions
+        # float(total_right/total_predictions)
 
         print colors.BOLD_GREEN
-        print
-        print "percent correct:", float(total_right/total_predictions)
+        print "percent correct:", lda.score(test_X, test_y)
         print colors.ENDC
 
         print "########################################"

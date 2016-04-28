@@ -51,6 +51,9 @@ class SignalGenerator(ModuleAbstract):
         # skip_columns
         self.skip_columns = self.module_settings["skip_columns"] if "skip_columns" in self.module_settings else None
 
+        # include_columns
+        self.include_columns = self.module_settings["include_columns"] if "include_columns" in self.module_settings else None
+
         # data contains timestamp flag
         self.data_already_contains_timestamp = self.module_settings["data_already_contains_timestamp"] if "data_already_contains_timestamp" in self.module_settings else False
 
@@ -192,14 +195,18 @@ class SignalGenerator(ModuleAbstract):
             # in this case we already have the timestamp, in the 0th position
             timestamp = nextline[self.timestamp_column]
             nextline = np.delete(nextline, self.timestamp_column)
+
             message = {"channel_%s" % i: float(nextline[i]) for i in xrange(len(nextline))}
             message['timestamp'] = timestamp
             return [message, classLabel, timestamp]
 
+        # column filters
         if self.skip_columns and self.skip_columns:
+            # filter out specific columns
             nextline = np.delete(nextline, self.skip_columns)
-            if self.debug:
-                print "Skipping columns", self.skip_columns
+        elif self.include_columns:
+            # only allow certain columns
+            nextline = nextline[self.include_columns]
 
         # just loop through all the elements in the line, assuming each element = 1 channel sample
         message = {"channel_%s" % i: int(float(nextline[i])) for i in xrange(len(nextline))}
