@@ -177,32 +177,32 @@ def FilterCoefficients(filter_type, sampling_frequency, boundary_frequencies):
     """
     return butter(2,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
 
-def BCIFileToEpochs(filename, num_channels, epoch_size=50, filter_class_labels=[-1,1], max_epochs=9000, mode="c"):
+def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class_labels=[-1,1], epoch_size=50,   include_electrodes=None):
     """
 
     :param filename:
     :param num_channels:
+    :param max_epochs:
+    :param filter_class_labels:
     :param epoch_size:
-    :param mode:  {"", "
+    :param include_electrodes:
     :return:
     """
     epochsCounter = Counter()
-
-    start = time.clock()
     window = pd.read_table(filename, header=None, dtype=np.float)
-    end = time.clock()
-    #print "loaded test file with pandas in ", str(end - start),"seconds"
 
-    raw_data = window.iloc[:,:num_channels].values.T
+    if include_electrodes is not None:
+        raw_data = window.iloc[:,include_electrodes].values.T
+        # since we're only using a subset of channels, overwrite the num_channels used to build the result matrix columns
+        num_channels, num_samples = raw_data.shape
+    else:
+        raw_data = window.iloc[:,:num_channels].values.T
+
     print "channel data", raw_data.shape
 
-    class_labels = window[:][num_channels].values
+    class_labels = window.iloc[:,-1].values
     print "class labels", class_labels.shape, class_labels
 
-    total_num_samples = len(class_labels)
-    start = 0
-    end = int(epoch_size)
-    current_pos = start
 
     """
     initialize a standard 3-dim array just to have a data structure that is standard with other libs
@@ -222,7 +222,6 @@ def BCIFileToEpochs(filename, num_channels, epoch_size=50, filter_class_labels=[
         #     end_index = None
 
             if epochs.shape[0] < max_epochs and int(class_labels[start_index]) in filter_class_labels:
-
                 #print "next window from ", start_index, "to", end_index
                 #print class_labels[start_index:end_index]
 
@@ -243,14 +242,5 @@ def BCIFileToEpochs(filename, num_channels, epoch_size=50, filter_class_labels=[
     print "test file retrieved epochs:", epochs.shape
     print "test file retrieved y:", len(y)
     print epochsCounter
-    # chop into epochs and append each epoch to running collection
-    # while current_pos <= window_length and epochs.shape[0] < num_epochs:
-    #
-    #     # save class label to the y array (will be used for the classifier)
 
-    #
-    #     # save the epoch to the standard 3 dim data structure
-    #     nextEpoch = np.array(raw_data[:,start:end])
-    #     epochs = np.append(epochs, [nextEpoch], axis=0)
-    #
     return [epochs, y]
