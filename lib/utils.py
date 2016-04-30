@@ -177,7 +177,7 @@ def FilterCoefficients(filter_type, sampling_frequency, boundary_frequencies):
     """
     return butter(2,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
 
-def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class_labels=[-1,1], epoch_size=50,   include_electrodes=None):
+def BCIFileToEpochs(filename=None, num_channels=8, max_epochs_per_class=None, filter_class_labels=[-1,1], epoch_size=50,   include_electrodes=None):
     """
 
     :param filename:
@@ -188,6 +188,8 @@ def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class
     :param include_electrodes:
     :return:
     """
+    print
+    print "opening test data file..."
     epochsCounter = Counter()
     window = pd.read_table(filename, header=None, dtype=np.float)
 
@@ -214,6 +216,9 @@ def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class
     # find first index of each class switch
     window_start_indexes = np.nonzero(np.r_[1,np.diff(class_labels)[:-1]])
     num_windows = len(window_start_indexes[0])
+    #print "there are", num_windows, "class windows"
+    #print "window_class_boundaries", window_start_indexes
+
     for i in xrange(num_windows):
         start_index = window_start_indexes[0][i]
         if start_index != window_start_indexes[0][-1] :
@@ -221,7 +226,9 @@ def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class
         # else:
         #     end_index = None
 
-            if epochs.shape[0] < max_epochs and int(class_labels[start_index]) in filter_class_labels:
+            this_class = class_labels[start_index]
+
+            if (max_epochs_per_class is None or epochsCounter[this_class] < max_epochs_per_class) and int(this_class) in filter_class_labels:
                 #print "next window from ", start_index, "to", end_index
                 #print class_labels[start_index:end_index]
 
@@ -231,9 +238,9 @@ def BCIFileToEpochs(filename=None, num_channels=8, max_epochs=None, filter_class
                 #print "will split ",class_labels[start_index],"window of len", nextWindow.shape[1], "into",num_epochs,"epochs of size", epoch_size
 
                 for j in xrange(num_epochs):
-                    if epochs.shape[0] < max_epochs:
-                        epochsCounter[class_labels[start_index]] += 1
-                        y = np.append(y, class_labels[start_index])
+                    if max_epochs_per_class is None or epochsCounter[this_class] < max_epochs_per_class:
+                        epochsCounter[this_class] += 1
+                        y = np.append(y, this_class)
                         start_epoch = start_index + (epoch_size * j)
                         end_epoch = start_epoch + epoch_size
                         nextEpoch = np.array(raw_data[:,start_epoch:end_epoch])

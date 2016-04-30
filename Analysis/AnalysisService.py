@@ -4,6 +4,7 @@ from cloudbrain.utils.metadata_info import get_supported_metrics, get_supported_
 from cloudbrain.settings import RABBITMQ_ADDRESS, MOCK_DEVICE_ID
 import argparse
 import imp
+import json
 import os
 import yaml
 import time
@@ -91,9 +92,9 @@ class AnalysisService(object):
             if 'debug' in module_settings and module_settings['debug'] == True:
                 # if any of the modules have debug turned on, turn on the service debug too
                 self.debug = True
-                print colors.CYAN + \
-                     "\nModule: " + moduleClassName + "\n" \
-                    "Configuration: " + str(module_conf) + "\n" + colors.ENDC
+                #print colors.CYAN + \
+                #     "\nModule: " + moduleClassName + "\n" \
+                #    "Configuration: " + json.dumps(module_conf, indent=2) + "\n" + colors.ENDC
 
         module_id = None
         if 'id' in module_conf:
