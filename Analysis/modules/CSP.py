@@ -1,22 +1,23 @@
 __author__ = 'odrulea'
 from Analysis.modules.ModuleAbstract import ModuleAbstract
-from lib.utils import BufferToMatrix
+from collections import Counter
 import json
-import numpy as np
 from lib.constants import *
-from lib.utils import FilterCoefficients, BCIFileToEpochs
+from lib.constants import colors
+from lib.utils import BufferToMatrix, FilterCoefficients, BCIFileToEpochs
+import matplotlib.pyplot as plt
+from mne.decoding import CSP as mneCSP
+import numpy as np
+import os
 from scipy.signal import lfilter
 from scipy.linalg import eigh
+import sys
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cross_validation import cross_val_score
-from mne.decoding import CSP as mneCSP
-from lib.constants import colors
-from collections import Counter
-import matplotlib.pyplot as plt
-import os
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import confusion_matrix
 import thread
 import time
-import sys
 
 """
 CSP algorithm to calculate spatial filters from incoming raw EEG
@@ -81,6 +82,7 @@ class CSP(ModuleAbstract):
         """
         self.epochs = np.zeros((0,self.num_channels,self.epoch_size))
         self.covariances = np.zeros((0,self.num_channels,self.num_channels))
+        self.all_spatial_filters = None
         self.spatial_filters = None
 
         # counter for epochs
@@ -165,12 +167,10 @@ class CSP(ModuleAbstract):
                 """
                 if we have reached the minimum threshold of data point in each class, time to run CSP algorithm
                 """
-                print
                 if self.debug:
-                    print colors.SILVER
                     print "------------------------------------------------"
-                    print "Calculation threshold of ", str(self.calculation_threshold), " reached.\n Recalculating CSP spatial filters."
-                    print colors.ENDC
+                    print "Calculation threshold of ", str(self.calculation_threshold), " reached"
+                    print "Recalculating CSP spatial filters"
 
                 self.calculateCSPFilters()
                 self.selfEvaluation()
@@ -210,13 +210,7 @@ class CSP(ModuleAbstract):
 
     def calculateCSPFilters(self):
         """
-        CSPMatrix: the learnt CSP filters (a [Nc*Nc] matrix with the filters as rows)
-
-        """
-        print "-------------------------"
-        print "Calculate Spatial Filters:"
-
-        """
+        CSPMatrix: the learnt CSP filters (a [channels x channels] matrix with the filters as rows)
         """
 
         # using the MNE CSP function to compare (reg=0.01)
@@ -230,8 +224,6 @@ class CSP(ModuleAbstract):
 
 
         # segregate the covariances by class label
-        print "calculating covariances"
-
         class1_epochs = self.epochs[self.y == self.class1]
         class2_epochs = self.epochs[self.y == self.class2]
 
@@ -280,9 +272,9 @@ class CSP(ModuleAbstract):
         #     print "pair spatial filter indices", ind
 
         # reorder by new index list
-        all_spatial_filters = w[:, ind].T # this had the .T transpose................................................
+        self.all_spatial_filters = w[:, ind].T # this had the .T transpose................................................
         # pick the top n spatial filters
-        self.spatial_filters = all_spatial_filters[:self.num_spatial_filters]
+        self.spatial_filters = self.all_spatial_filters[:self.num_spatial_filters]
 
         if self.debug:
             print colors.MAGENTA
@@ -294,7 +286,7 @@ class CSP(ModuleAbstract):
             #     print "w",w
 
             print "-----------------------------------------------------------------"
-            print "Spatial filters: ", all_spatial_filters[:self.num_spatial_filters].shape\
+            print "Spatial filters: ", self.all_spatial_filters[:self.num_spatial_filters].shape
             #print all_spatial_filters[:self.num_spatial_filters]
             print colors.ENDC
 
@@ -326,7 +318,7 @@ class CSP(ModuleAbstract):
                 start = (i*samples)
                 end = (i+1)*samples
                 chart_class_labels[start:end] = class_labels[i]
-                print "chart_class_labels[",start,":",end,"] = ",class_labels[i]
+                #print "chart_class_labels[",start,":",end,"] = ",class_labels[i]
 
             print "chart_data:",len(chart_data)
             #print "y", chart_class_labels.shape, chart_class_labels
@@ -347,52 +339,137 @@ class CSP(ModuleAbstract):
         plt.savefig(fname)
         print colors.ENDC
 
+    def printEpochs(self, epochs, class_labels, fname='foo.pdf'):
+
+        print colors.RED
+        print "--------------------------------"
+        print "Printing chart"
+
+        fname = '/Users/odrulea/tmp/' + fname
+        print "[Save Graph to file]",fname
+
+        trials,channels,samples = epochs.shape
+        print "trials:",trials,"channels:",channels,"samples:",samples
+
+        # chart_data = np.reshape(epochs.swapaxes(0,1),(channels,trials*samples))
+        # print chart_data.shape
+        #
+        #
+        # fig, axes = plt.subplots(nrows=channels, ncols=1)
+        # chart_x = np.arange(trials*samples)
+        # chart_class_labels = np.zeros(trials*samples)
+        # print class_labels
+        # for i in xrange(len(class_labels)):
+        #     start = (i*samples)
+        #     end = (i+1)*samples
+        #     chart_class_labels[start:end] = class_labels[i]
+        #     #print "chart_class_labels[",start,":",end,"] = ",class_labels[i]
+        #
+        # print "chart_data:",len(chart_data)
+        # #print "y", chart_class_labels.shape, chart_class_labels
+        #
+        #
+        #
+        # for chart_index in xrange(channels):
+        #     # plot the transform
+        #     plt.subplot(channels,1,chart_index+1)
+        #     plt.plot(chart_x, chart_data[chart_index,:], 'r', linewidth=1)
+        #
+        #     # min/max
+        #     class_multiplier = max(abs(np.amin(chart_data[chart_index,:])), abs(np.amax(chart_data[chart_index,:])))
+        #     #print "class_mulitplier", class_multiplier, (chart_class_labels*class_multiplier)[275:350]
+        #     plt.fill_between(chart_x, chart_class_labels*class_multiplier , facecolor='green', alpha=0.3)
+        #
+        # # have to save - can't show() in multi-threaded context
+        # plt.savefig(fname)
+        # print colors.ENDC
+
+    def extractFeatures(self, epochs, spatial_filters, chart_file_name=None, y=[]):
+        print "------------------------"
+        print "Extract Features"
+
+        # calc dot product of spatial filters
+        X = np.asarray([np.dot(spatial_filters, epoch) for epoch in epochs])
+        print "X transformed by spatial filters", X.shape
+
+        # CHART
+        if chart_file_name and y.any():
+            self.printChart(X, y)
+
+        # compute features (mean band power)
+        # compute log variance
+        X = np.log((X ** 2).mean(axis=2))
+        print "X transformed by log variance of each epoch", X.shape
+
+        return X
+
+    def tuneSpatialFilters(self):
+
+        print colors.MAGENTA
+        num_total_spatial_filters = self.all_spatial_filters.shape[0]
+
+        best_mean = 0
+        best_num = 0
+        best_score = None
+
+        for i in xrange(num_total_spatial_filters):
+
+            num_filters_to_try = i+1
+            print "trying with first",num_filters_to_try,"spatial filters"
+            trial_X = self.extractFeatures(self.epochs, self.all_spatial_filters[:num_filters_to_try])
+            lda = LinearDiscriminantAnalysis()
+            lda = lda.fit(trial_X, self.y)
+            cross_validation_folds = 10
+            xval = cross_val_score(lda, trial_X, self.y, cv=cross_validation_folds)
+            #print xval
+            this_mean = xval.mean()
+            print "mean",this_mean
+            if this_mean > best_mean:
+                best_mean = this_mean
+                best_num = num_filters_to_try
+                best_score = xval
+
+        print "-----------------------------"
+        print "best mean was", best_mean, "with", best_num, "filters used"
+        print best_score
+
+        print colors.ENDC
+
     def selfEvaluation(self):
+
+        eval_start = time.clock()
 
         print colors.GOLD
         print "--------------------------"
         print "Self Evaluation"
 
-
-        self.y = np.array(self.y)
-        self.epochs = np.array(self.epochs)
-
-
-        # calc dot product of spatial filters
-        self.X = np.asarray([np.dot(self.spatial_filters, epoch) for epoch in self.epochs])
-        print "training X transformed by spatial filters", self.X.shape
-
-        # compute features (mean band power)
-        # compute log variance
-        self.X = np.log((self.X ** 2).mean(axis=2))
-        print "training X transformed by log variance of each epoch", self.X.shape
-
+        # extract features from collected epochs by transforming with spatial filters
+        print "Training..."
+        self.X = self.extractFeatures(self.epochs, self.spatial_filters)
         lda = LinearDiscriminantAnalysis()
         lda = lda.fit(self.X, self.y)
+        cross_validation_folds = 10
+        xval = cross_val_score(lda, self.X, self.y, cv=cross_validation_folds)
 
-        print "LDA training score:", lda.score(self.X, self.y)
+        self.tuneSpatialFilters()
 
-        k = 10
+        # print cross validation report on training LDA
         print
-        print colors.SILVER
-        print "cross-validation with k=",k,"folds"
-        xval = cross_val_score(lda, self.X, self.y, cv=k)
+        print colors.BOLD_YELLOW
+        print "cross-validation with k=",cross_validation_folds,"folds"
         print xval
         print "mean:", xval.mean()
 
-        print colors.GOLD
-        print "-----------------------------------------------------------------"
+        print colors.SILVER
+        print "--------------------------"
+        print "Self Evaluation"
+        print "Testing..."
 
-        print "Testing Phase: feeding test data to classifier"
-
-
-
-        # pandas is the fastest, numpy loadtxt was 10x slower
         start = time.clock()
         test_epochs, test_y = BCIFileToEpochs(
             filename=self.test_file,
             num_channels=self.num_channels,
-            max_epochs=self.calculation_threshold*2,
+            max_epochs_per_class=1000, #self.calculation_threshold,
             filter_class_labels=[-1,1], #self.class_labels,
             epoch_size=self.epoch_size,
             include_electrodes=self.include_electrodes
@@ -402,52 +479,38 @@ class CSP(ModuleAbstract):
 
         # apply IIR filters to each channel row
         test_epochs = np.apply_along_axis( self.filterChannelData, axis=1, arr=test_epochs )
-        # assemble y
-        test_y = np.array(test_y)
 
-        # assemble X
-        test_epochs = np.array(test_epochs)
-
-        # calc dot product of spatial filters
-        test_X = np.asarray([np.dot(self.spatial_filters, epoch) for epoch in test_epochs])
-        print "test_X before log variance", test_X.shape
-
-        ########################
-        # CHART
-        self.printChart(test_X, test_y)
-
-        # compute features (mean band power)
-        # compute log variance
-        test_X = np.log((test_X ** 2).mean(axis=2))
-        print "test_X after log variance", test_X.shape
+        test_X = self.extractFeatures(epochs=test_epochs, spatial_filters=self.spatial_filters)
+        #chart_file_name="test_filters.pdf", y=test_y)
 
         print "-----------------------------------------------------------------"
-        predictions = lda.predict(test_X)
-        print "Prediction Score"
+        print "Metrics & Score"
 
-        total_right = 0.
-        total_wrong = 0.
-        total_predictions = 0.
-        for i in xrange(len(predictions)):
-            #print "predicted:", predictions[i], type(predictions[i]), "/ actual:", test_y[i], type(test_y[i])
-            total_predictions += 1.
-            if predictions[i] == test_y[i]:
-                total_right += 1.
-            else:
-                total_wrong += 1.
+        print colors.ORANGE
+        predicted_y = lda.predict(test_X)
+        cm = confusion_matrix(test_y, predicted_y)
+        np.set_printoptions(precision=2)
+        print('Confusion matrix, without normalization')
+        print(cm)
+        cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print('Normalized confusion matrix')
+        print(cm_normalized)
 
+
+        print colors.DARK_GREEN
         print "test",self.test_file
         print "bandpass filter", self.bandpass_filter_range
-        print "num_epochs per class", self.calculation_threshold
+        print "trained with", self.calculation_threshold, "epochs per class"
+        print (self.calculation_threshold*2*self.epoch_size)/self.sampling_rate, "sec trained"
         print "epoch_size", self.epoch_size
         print "CSP filters:", self.num_spatial_filters
-
-        # print "total right:", total_right,"total_wrong:", total_wrong,"out of", total_predictions
-        # float(total_right/total_predictions)
 
         print colors.BOLD_GREEN
         print "percent correct:", lda.score(test_X, test_y)
         print colors.ENDC
+
+        end = time.clock()
+        print "evaluation stage completed in ", str(end - eval_start),"seconds"
 
         print "########################################"
         print "########################################"

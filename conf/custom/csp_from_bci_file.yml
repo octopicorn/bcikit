@@ -4,7 +4,7 @@
 #
 ###################################################################
 global:
-  num_channels: 24  # how many outputs to produce (default to device if specified, or 1 if not)
+  num_channels: 59  # how many outputs to produce (default to device if specified, or 1 if not)
 
 modules:
 ###################################################################
@@ -21,7 +21,7 @@ modules:
       # (by default this is assumed to be first col)
       #data_already_contains_timestamp: True
       #timestamp_column: 8 # based on column starting number of 0
-      include_columns: [25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
+      #include_columns: [25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
       class_label_column: 59 # based on column starting number of 0
       # skip_lines_prefix: "%"
       #skip_lines: 1
@@ -66,18 +66,17 @@ modules:
     class: "CSP"
     settings:
       debug: True
-      bandpass_filter_range: [9.0,15.0]
+      bandpass_filter_range: [7.0,30.0]
       notch_filter: False # [59.0,61.0]
-      calculation_threshold: 50 # how many epochs for each class label before we trigger calculation of CSP
+      calculation_threshold: 300 # how many epochs for each class label before we trigger calculation of CSP
       class_labels: [-1,1]
-      class_label_channel: 24 # based on channel starting number of 0
+      class_label_channel: 59 # based on channel starting number of 0
       epoch_size: 25
       sampling_rate: 100  # Hz (samples per second)
-      num_spatial_filters: 12
-      test_file: "/Users/odrulea/Documents/docs/gradschool/BCI/datasets/bci4/100Hz/test/bcikit_parsed/ds1b.txt"
-      #optimization_trace: True
-      plot: False
-      include_electrodes: [25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
+      num_spatial_filters: 44
+      test_file: "/Users/odrulea/Documents/docs/gradschool/BCI/datasets/bci4/100Hz/train/bcikit_parsed/ds1b.txt"
+      optimization_trace: True
+      #include_electrodes: [25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48]
 
     inputs:
       data:
