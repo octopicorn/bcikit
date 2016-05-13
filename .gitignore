@@ -65,5 +65,6 @@ target/
 # ignore saved data by user
 /Viz/www/node_modules/
 data/*.data
+data/custom/
 test.py
 
