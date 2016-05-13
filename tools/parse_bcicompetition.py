@@ -56,6 +56,7 @@ class MRKParser(object):
 			# these files have NaN so convert those to 0 to normalize it
 			if math.isnan(float(classLabel)):
 				classLabel = 0
+
 			classLabel = int(classLabel)
 
 			if self.mrk_file_mode == "testprint" and classLabel != 0 and classLabel != self.mrk_file_current_class:
@@ -132,7 +133,14 @@ def parseFile(input_fname, output_filepath, mode, classLength):
 		# loop through the input file
 		i = 0
 		for row in cnt_reader:
-			row.append(str(mrkParser.getClassLabelFromMrkFile(i)))
+			classLabel = mrkParser.getClassLabelFromMrkFile(i)
+
+			if int(classLabel) == -1:
+				classLabel = 2
+			elif int(classLabel) == 1:
+				classLabel = 3
+			row.append(str(classLabel))
+
 			# write to output file
 			if active:
 				csv_writer.writerow(row)
@@ -165,6 +173,8 @@ def main():
 	for fname in glob.glob("*_cnt*"):
 		output_fname = fname.replace("_cnt", "")
 		output_fname = output_fname.replace("BCICIV_", "")
+		output_fname = output_fname.replace("eval_", "")
+		output_fname = output_fname.replace("calib_", "")
 		print "---------------------------------------------"
 		print fname, " > ", output_fname
 		output_filepath = os.path.join(output_dir,output_fname)
