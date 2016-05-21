@@ -3,6 +3,7 @@ mpl.use('TkAgg')
 
 import argparse
 from bisect import bisect
+import copy
 import numpy as np
 import pandas as pd
 import time
@@ -20,6 +21,8 @@ import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cross_validation import cross_val_score, ShuffleSplit
+from sklearn.cross_validation import train_test_split
+from sklearn.naive_bayes import GaussianNB
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -40,7 +43,7 @@ def main():
 	opts.epoch_full_tmin = -0.5
 	opts.epoch_full_tmax = 3.5
 	opts.epoch_trim_tmin = 0.0
-	opts.epoch_trim_tmax = 3.0
+	opts.epoch_trim_tmax = 0.0
 
 
 	# constants
@@ -54,6 +57,7 @@ def main():
 	# top ten scores
 	ranked_scores = list()
 	ranked_scores_opts = list()
+	ranked_scores_lda = list()
 
 	#################
 	# get data from files
@@ -68,83 +72,142 @@ def main():
 	print "test dataset loaded in ", str(end - eval_start),"seconds"
 
 	###
-	# loop through some permutations
-	bandpass_combinations = []
-	possible_bandpass_filter_low = np.arange(7.0, 16.0)
-	possible_bandpass_filter_high = np.arange(11.0, 31.0)
-	for x in itertools.product(possible_bandpass_filter_low,possible_bandpass_filter_high):
-		if x[0] < x[1]:
-			bandpass_combinations.append(x)
+	# create a set of many bandpass filter range combinations
+	bandpass_combinations = get_bandpass_ranges()
+	window_ranges = get_window_ranges()
 
+	# vars to store cumulative performance
 	best_score = 0
 	best_opts = None
-
 	total_start = time.clock()
 
-	for bp in bandpass_combinations:
-		print ">>*-------------------------------*>"
-		print "trying with permutation", bp
+	for epoch_window in window_ranges:
+		loop1_opts = copy.deepcopy(opts)
+		loop1_opts.epoch_trim_tmin = epoch_window[0]
+		loop1_opts.epoch_trim_tmax = epoch_window[1]
 
-		eval_start = time.clock()
 
-		current_opts = opts
-		current_opts.bandpass = bp
-		#current_opts.epoch_trim_tmin = 0.0
-		#current_opts.epoch_trim_tmax = 1.0
+		for bp in bandpass_combinations:
+			print ">>*-------------------------------*>"
+			eval_start = time.clock()
+			current_opts = copy.deepcopy(loop1_opts)
+			current_opts.bandpass = bp
 
-		# Bandpass filter coefficients
-		# bandpass filter coefficients
-		current_opts.b, current_opts.a = butter(5, np.array([current_opts.bandpass[0], current_opts.bandpass[1]])/(sfreq/2.0), 'bandpass')
+			print "trying this permutation:"
+			print "bp",bp,"window",epoch_window
 
-		[train_X, train_y] = extract_X_and_y(train_nparray, train_info, current_opts, verbose=verbose)
-		[test_X, test_y] = extract_X_and_y(test_nparray, test_info, current_opts, verbose=verbose)
+			# bandpass filter coefficients
+			current_opts.b, current_opts.a = butter(5, np.array([current_opts.bandpass[0], current_opts.bandpass[1]])/(sfreq/2.0), 'bandpass')
 
-		[num_trials, num_channels, num_samples] = train_X.shape
+			#[test_X, test_y] = extract_X_and_y(test_nparray, test_info, current_opts, verbose=verbose)
 
-		# CLASSIFIER
-		[score, best_num_filters] = eval_classification(num_channels, train_X, train_y, test_X, test_y, verbose=verbose)
 
-		print "bandpass",current_opts.bandpass
-
-		idx = bisect(ranked_scores, score)
-		ranked_scores.insert(idx, score)
-		ranked_scores_opts.insert(idx,
-		                          {
-			                          "filters":best_num_filters,
-			                          "bandpass":current_opts.bandpass,
-			                          "tmin":current_opts.epoch_trim_tmin,
-			                          "tmax":current_opts.epoch_trim_tmax
-		                          })
-
-		# timer
-		print round(time.clock() - eval_start,1),"sec"
+			# only train and score against the train set
+			# we can't score without looking at test data, and this woul dbe looking ahead,
+			# as well as overfitting
+			[train_X, train_y] = extract_X_and_y(train_nparray, train_info, current_opts, verbose=verbose)
+			[practice_train_X, practice_test_X, practice_train_y, practice_test_y] = train_test_split(train_X, train_y, test_size=0.5)
+			[num_trials, num_channels, num_samples] = train_X.shape
 
 
 
-		print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-		print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-		print "          H A L L    O F    F A M E"
-		print
+			# CLASSIFIER with score for brute force parameter tuning
+			[score, best_num_filters] = eval_classification(num_channels, practice_train_X, practice_train_y, practice_test_X, practice_test_y, verbose=verbose)
+			current_opts.best_num_filters = best_num_filters
+			print "this score was",score
 
-		print "rank,score,filters,bandpass_low,bandpass_high,window_min,window_max"
-		j=1
-		for i in xrange(len(ranked_scores)-1,0,-1):
-			print len(ranked_scores)-i,",",round(ranked_scores[i],4),",",ranked_scores_opts[i]['filters'],",",ranked_scores_opts[i]['bandpass'][0],",",ranked_scores_opts[i]['bandpass'][1],",",ranked_scores_opts[i]['tmin'],",",ranked_scores_opts[i]['tmax']
-			j+=1
-			if j>10:
-				break
+			# put in ranked order Top 10 list
+			idx = bisect(ranked_scores, score)
+			ranked_scores.insert(idx, score)
+			ranked_scores_opts.insert(idx, current_opts)
+
+			# timer
+			print round(time.clock() - eval_start,1),"sec"
 
 
-		if score > best_score:
-			best_score = score
-			best_opts = current_opts
+
+			print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+			print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+			print "          H A L L    O F    F A M E"
+			print
+
+			print "score,filters,bandpass_low,bandpass_high,window_min,window_max"
+			j=1
+			for i in xrange(len(ranked_scores)-1,0,-1):
+				print len(ranked_scores)-i,",",round(ranked_scores[i],4),",",
+				print_opts(ranked_scores_opts[i])
+				j+=1
+				if j>10:
+					break
+
+
+			if score > best_score:
+				best_score = score
+				best_opts = copy.deepcopy(current_opts)
 
 	print "<-----&--@--------<<"
-	print "best score of all permutations", best_score
-	print best_opts
+	print "best score of all permutations"
+	print best_score,
+	print_opts(best_opts)
 
-
+	print "actual score"
 	print
+	print "rank,score,filters,bandpass_low,bandpass_high,window_min,window_max"
+	# CLASSIFIER
+
+
+	# now try with top 5 params
+	print "actual score: top 10 trained models applied to test data"
+	test_y = None
+
+	predictions = None
+	num_ensembles = 6
+	for i in xrange(1,num_ensembles+1):
+		best_opts = ranked_scores_opts[len(ranked_scores)-i]
+
+		[train_feat, train_y, test_feat, test_y] = train_transform(train_nparray, train_info, test_nparray, test_info, best_opts, verbose=verbose)
+
+		# train LDA
+		lda = LinearDiscriminantAnalysis()
+		prediction_score = lda.fit(train_feat, train_y).score(test_feat, test_y)
+		prediction = lda.predict(test_feat)
+		if predictions is None:
+			# initialize
+			predictions = np.zeros((num_ensembles,len(test_y)))
+
+		# nb = GaussianNB()
+		# nb_score = nb.fit(train_feat, train_y).score(test_feat, test_y)
+		# print "NB:",nb_score
+
+
+		# save prediction
+		predictions[i-1,:] = prediction
+
+		print prediction_score,
+		print_opts(best_opts)
+
+	#print "real answer:", test_y
+
+	# use ensemble to "vote" for each prediction
+	num_correct = 0
+	for i in xrange(len(test_y)):
+		#print "sum", predictions[:,i].sum(),
+
+		if predictions[:,i].sum() >= float(num_ensembles)/float(2):
+			guess = 1
+			#print "guessing 1",
+		else:
+			guess = 0
+			#print "guessing 0",
+
+		if guess == test_y[i]:
+			num_correct += 1
+
+		#print "correct so far::",float(num_correct)/float(i+1)
+
+	print "using ensemble:"
+	print "percentage correct",num_correct,"out of",len(test_y),"=",float(num_correct)/float(len(test_y))
+
 	print
 	print "total run time", round(time.clock() - total_start,1),"sec"
 	print
@@ -153,6 +216,37 @@ def main():
 
 
 	exit()
+
+def train_transform(train_nparray, train_info, test_nparray, test_info, best_opts, verbose=False):
+	[train_X, train_y] = extract_X_and_y(train_nparray, train_info, best_opts, verbose=verbose)
+	[test_X, test_y] = extract_X_and_y(test_nparray, test_info, best_opts, verbose=verbose)
+	# train / apply CSP with max num filters
+	csp = CSP(n_components=best_opts.best_num_filters, reg=None, log=True)
+	csp.fit(train_X, train_y)
+	# apply CSP filters to train data
+	train_feat = csp.transform(train_X)
+	# apply CSP filters to test data
+	test_feat = csp.transform(test_X)
+	return [train_feat, train_y, test_feat, test_y]
+
+def print_opts(opts):
+	print opts.best_num_filters,",",opts.bandpass[0],",",opts.bandpass[1],",",opts.epoch_trim_tmin,",",opts.epoch_trim_tmax
+
+def get_bandpass_ranges():
+	bandpass_combinations = []
+	possible_bandpass_filter_low = np.arange(8.0, 15.0)
+	possible_bandpass_filter_high = np.arange(11.0, 30.0)
+	for x in itertools.product(possible_bandpass_filter_low,possible_bandpass_filter_high):
+		if x[0] < x[1]:
+			bandpass_combinations.append(x)
+	return bandpass_combinations
+
+def get_window_ranges():
+	window_ranges = []
+	possible_ranges = [(0.0,3.0), (2.0,3.5), (1.5,3.0),  (1.0,2.0)]
+	for r in possible_ranges:
+		window_ranges.append(r)
+	return window_ranges
 
 def extract_X_and_y(raw_nparray, raw_info, opts, verbose=False):
 
@@ -183,11 +277,11 @@ def extract_X_and_y(raw_nparray, raw_info, opts, verbose=False):
 
 	return [X, y]
 
-def eval_classification(num_spatial_filters, train_X, train_y, test_X, test_y, verbose=False):
+def eval_classification(max_spatial_filters, train_X, train_y, test_X, test_y, verbose=False):
 	# Assemble a classifier
 
 	# train / apply CSP with max num filters
-	csp = CSP(n_components=num_spatial_filters, reg=None, log=True)
+	csp = CSP(n_components=max_spatial_filters, reg=None, log=True)
 
 	csp.fit(train_X, train_y)
 
@@ -195,7 +289,7 @@ def eval_classification(num_spatial_filters, train_X, train_y, test_X, test_y, v
 	best_score = 0.0
 
 	# try at least 6 filters
-	for i in xrange(6): #num_spatial_filters):
+	for i in xrange(1,6): #max_spatial_filters):
 
 		num_filters_to_try = i+1
 		if verbose:
