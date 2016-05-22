@@ -180,7 +180,7 @@ class SignalGenerator(ModuleAbstract):
             return [message, classLabel, timestamp]
 
         # split new line into data by separator
-        nextline = np.array(nextline.strip().split(self.separator), dtype=int)
+        nextline = np.array(nextline.strip().split(self.separator), dtype=float)
 
         # TODO deal with edge case of timestamp column coming after class column, may have to use some other strategy besides pop()
         # for now, it's ok to just pop the classLabel first, then timestamp

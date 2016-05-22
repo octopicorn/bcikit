@@ -15,7 +15,7 @@ modules:
       sampling_rate: 250  # Hz (samples per second)
       pattern: "files"   # rand | sine | files
       files: ["data/sample_openbci_data.txt"] # filepath can be either absolute or relative to dir of run.py
-      separator: ","
+      separator: ", "
       # this will let downstream modules know whether or not timestamp is included
       # setting this to true means fist column of data will be ignored
       data_already_contains_timestamp: False
