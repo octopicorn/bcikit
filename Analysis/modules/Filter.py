@@ -38,10 +38,12 @@ class Filter(ModuleAbstract):
         For more info, see http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.butter.html#scipy.signal.butter
         Or http://www.mathworks.com/help/signal/ref/butter.html?s_tid=gn_loc_drop#buct3_m
         """
-        self.notch_filter_b, self.notch_filter_a = FilterCoefficients('bandstop',250.0,np.array(self.notch_filter))
+        if self.notch_filter:
+            self.notch_filter_b, self.notch_filter_a = FilterCoefficients('bandstop',250.0,np.array(self.notch_filter))
 
         # create the bandpass filter (7-13Hz)
-        self.bandpass_filter_b, self.bandpass_filter_a = FilterCoefficients('bandpass',250.0,np.array(self.bandpass_filter))
+        if self.bandpass_filter:
+            self.bandpass_filter_b, self.bandpass_filter_a = FilterCoefficients('bandpass',250.0,np.array(self.bandpass_filter))
 
     def filterWindow(self, window, filter_func):
         """
@@ -86,12 +88,14 @@ class Filter(ModuleAbstract):
                 # print "window ",window
 
                 # apply notch filter
-                window = self.filterWindow(window,'notchFilter')
-                #print "notched " + str(filtered_window.shape)
+                if self.notch_filter:
+                    window = self.filterWindow(window,'notchFilter')
+                    #print "notched " + str(filtered_window.shape)
 
                 # apply bandpass filter
-                window = self.filterWindow(window,'bandpassFilter')
-                #print "bandpass " + str(filtered_window.shape)
+                if self.bandpass_filter:
+                    window = self.filterWindow(window,'bandpassFilter')
+                    #print "bandpass " + str(filtered_window.shape)
 
                 # remove mean
                 window = self.filterWindow(window,'meanFilter')
