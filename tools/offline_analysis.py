@@ -8,21 +8,14 @@ import numpy as np
 import pandas as pd
 import time
 import itertools
-import json
-import pprint
 import mne
 from mne.io import RawArray
-from mne.channels import read_montage
 from mne import create_info, concatenate_raws, pick_types, Epochs
 from mne.decoding import CSP
-from sklearn.base import BaseEstimator, TransformerMixin
-from glob import glob
-import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cross_validation import cross_val_score, ShuffleSplit
 from sklearn.cross_validation import train_test_split
-from sklearn.naive_bayes import GaussianNB
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -37,10 +30,10 @@ def main():
 	opts = parse_args()
 	verbose = opts.debug
 
-	# variables
-	opts.bandpass = (8.0,30.0)
-	opts.num_spatial_filters = 44
-	opts.epoch_full_tmin = -0.5
+	# variables (parameters)
+	opts.bandpass = (8.0,30.0)      # bandpass filter envelope (min, max)
+	opts.num_spatial_filters = 44   # max num spatial filters to try
+	opts.epoch_full_tmin = -0.5     #
 	opts.epoch_full_tmax = 3.5
 	opts.epoch_trim_tmin = 0.0
 	opts.epoch_trim_tmax = 0.0
@@ -51,8 +44,8 @@ def main():
 	opts.event_labels = {'left':2, 'right':3}
 
 	# files
-	train_fname = "data/custom/bci4/train/ds1g.txt"
-	test_fname = "data/custom/bci4/test/ds1g.txt"
+	train_fname = "data/custom/bci4/train/ds1b.txt"
+	test_fname = "data/custom/bci4/test/ds1b.txt"
 
 	# top ten scores
 	ranked_scores = list()
@@ -88,7 +81,6 @@ def main():
 
 
 		for bp in bandpass_combinations:
-			print ">>*-------------------------------*>"
 			eval_start = time.clock()
 			current_opts = copy.deepcopy(loop1_opts)
 			current_opts.bandpass = bp
@@ -243,7 +235,7 @@ def get_bandpass_ranges():
 
 def get_window_ranges():
 	window_ranges = []
-	possible_ranges = [(0.0,3.0), (2.0,3.5), (1.5,3.0),  (1.0,2.0)]
+	possible_ranges = [(0.0,3.0), (0.5,3.0), (2.0,3.5), (1.5,3.0),  (1.0,2.0)]
 	for r in possible_ranges:
 		window_ranges.append(r)
 	return window_ranges
@@ -253,11 +245,16 @@ def extract_X_and_y(raw_nparray, raw_info, opts, verbose=False):
 	# need to make a new RawArray, because once we apply filter, we mutate its internal _data
 	raw = RawArray(raw_nparray, raw_info, verbose=verbose)
 	picks = pick_types(raw.info, eeg=True)
+	picks = getChannelSubsetMotorBand()
+	#picks = getChannelSubsetFront()
+	#picks = getChannelSubsetBack()
+	#print picks
 
 	# Apply band-pass filter
 	raw._data[picks] = lfilter(opts.b, opts.a, raw._data[picks])
 
-	train_events = mne.find_events(raw, shortest_event=0, verbose=verbose)
+	consecutive=True
+	train_events = mne.find_events(raw, shortest_event=0, consecutive=consecutive, verbose=verbose)
 	train_epochs = Epochs(raw, train_events, opts.event_labels, tmin=opts.epoch_full_tmin, tmax=opts.epoch_full_tmax,
 	                      proj=True, picks=picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
 
@@ -269,11 +266,6 @@ def extract_X_and_y(raw_nparray, raw_info, opts, verbose=False):
 	y = epochs_trimmed.events[:, -1] - 2
 	if verbose:
 		print "y", y.shape
-
-	# data_full = raw._data[picks]
-	# labels_full = raw._data[len(picks):]
-	# if verbose:
-	# 	print "labels",labels_full.shape
 
 	return [X, y]
 
@@ -321,22 +313,38 @@ def eval_classification(max_spatial_filters, train_X, train_y, test_X, test_y, v
 def getChannelNames():
 	"""Return Channels names."""
 	return ['AF3', 'AF4', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'FC5',
-			'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'CFC7', 'CFC5', 'CFC3',
-			'CFC1', 'CFC2', 'CFC4', 'CFC6', 'CFC8', 'T7', 'C5', 'C3', 'C1', 'Cz',
-			'C2', 'C4', 'C6', 'T8', 'CCP7', 'CCP5', 'CCP3', 'CCP1', 'CCP2', 'CCP4',
-			'CCP6', 'CCP8', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'P5',
-			'P3', 'P1', 'Pz', 'P2', 'P4', 'P6', 'PO1', 'PO2', 'O1', 'O2']
+			'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'CFC7', 'CFC5', 'CFC3', 'CFC1',
+			'CFC2', 'CFC4', 'CFC6', 'CFC8', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2',
+			'C4', 'C6', 'T8', 'CCP7', 'CCP5', 'CCP3', 'CCP1', 'CCP2', 'CCP4', 'CCP6',
+			'CCP8', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'P5', 'P3',
+			'P1', 'Pz', 'P2', 'P4', 'P6', 'PO1', 'PO2', 'O1', 'O2']
 
+def getChannelSubsetMotorBand():
+	"""Return Channels names."""
+	return [ 24, 25, 26, 27, 28, 29,
+	         30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+
+def getChannelSubsetFront():
+	"""Return Channels names."""
+	return [ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+def getChannelSubsetBack():
+	"""Return Channels names."""
+	return [43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58]
 
 def file_to_nparray(fname, sfreq=100.0, verbose=False):
 	"""
 	Create a mne raw instance from csv file.
 	"""
 	# get channel names
+	# in MNE, this means you must config ith two arrays:
+	# 1) an array of channel names as strings
+	# 2) corresponding array of channel types. in our case, all channels are type 'eeg'
 	ch_names = getChannelNames()
 	ch_type = ['eeg']*len(ch_names)
-	
-	# add class_label as "stim" channel
+
+
+	# add one more channel called 'class_label' as type 'stim'
 	ch_names.extend(['class_label'])
 	ch_type.extend(['stim'])
 	
