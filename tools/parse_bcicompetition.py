@@ -18,15 +18,15 @@ python tools/parse_bcicompetition.py -d /path/to/test_data
 There is a flag -m used to specify "mode"
 There are 3 possible values:
 train - used to parse train data files (where "_mrk" type files exist)
-test - used to parse test data files (where "_mrk" type files exist)
+test - used to parse test data files (where "_mrk" type files DO NOT exist, but "true_y" do)
 testprint - used to output to terminal output the content needed to convert "true_y" result files to "_mrk" files in preparation for "test" mode above
 """
 
 class MRKParser(object):
-	def __init__(self, fname, class_length, mode="train"):
+	def __init__(self, fname, class_length, classTranslation, mode="train"):
 		self.mrk_file_class_length = int(class_length)
 		self.mrk_file_mode = mode
-
+		self.mrk_class_translation = classTranslation
 
 		self.mrk_file_class_length_counter = 0
 		self.mrk_file_current_class = None
@@ -106,14 +106,14 @@ class MRKParser(object):
 		return self.mrk_file_current_class
 
 
-def parseFile(input_fname, output_filepath, mode, classLength):
+def parseFile(input_fname, output_filepath, mode, classLength, classTranslation):
 	if mode == "testprint":
 		active = False
 	else:
 		active = True
 
 	# load
-	mrkParser = MRKParser(input_fname, classLength, mode)
+	mrkParser = MRKParser(input_fname, classLength, classTranslation, mode)
 
 	if active:
 		# overwrite target file if already exists
@@ -135,10 +135,16 @@ def parseFile(input_fname, output_filepath, mode, classLength):
 		for row in cnt_reader:
 			classLabel = mrkParser.getClassLabelFromMrkFile(i)
 
-			if int(classLabel) == -1:
-				classLabel = 2
-			elif int(classLabel) == 1:
-				classLabel = 3
+			if classTranslation == 'class':
+				if int(classLabel) == -1:
+					classLabel = 2
+				elif int(classLabel) == 1:
+					classLabel = 3
+			elif classTranslation == 'active':
+				if classLabel == 0:
+					classLabel = 2
+				else:
+					classLabel = 3
 			row.append(str(classLabel))
 
 			# write to output file
@@ -154,6 +160,7 @@ def parse_args():
 	parser.add_argument('-d', '--dir', required=True, help="A directory containing files with both _cnt and _mrk type EEG files. No trailing slash please.")
 	parser.add_argument('-m', '--mode', required=False, default='train', help="Set to 'test' if parsing test (evaluation) files. Otherwise use default 'train' for training (calibration) files.")
 	parser.add_argument('-l', '--classLength', required=False, default=3000, help="Length of class. This means: for how many data points was each class label held.")
+	parser.add_argument('-t', '--classTranslation', required=False, default='class', help="Class label translation method. Use 'class' to convert positive/negative classes [-1,1] to [2,3].  Use 'active' to translate active/inactive, so any data with no class (label 0) becomes 2, and everything else becomes 3")
 	opts = parser.parse_args()
 	return opts
 
@@ -178,7 +185,7 @@ def main():
 		print "---------------------------------------------"
 		print fname, " > ", output_fname
 		output_filepath = os.path.join(output_dir,output_fname)
-		parseFile(fname, output_filepath, opts.mode, opts.classLength)
+		parseFile(fname, output_filepath, opts.mode, opts.classLength, opts.classTranslation)
 
 	print "FINISHED"
 	exit()

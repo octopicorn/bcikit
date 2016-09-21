@@ -175,7 +175,7 @@ def ListConfOutputMetrics(conf, prefix=None):
 def FilterCoefficients(filter_type, sampling_frequency, boundary_frequencies):
     """
     """
-    return butter(2,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
+    return butter(5,boundary_frequencies/(sampling_frequency / 2.0), filter_type)
 
 def BCIFileToEpochs(filename=None, num_channels=8, max_epochs_per_class=None, filter_class_labels=[-1,1], epoch_size=50,   include_electrodes=None):
     """
