@@ -6,6 +6,7 @@ from bisect import bisect
 import copy
 import collections
 import inspect
+import math
 import numpy as np
 import pandas as pd
 import time
@@ -56,25 +57,17 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		if not self.is_number(self.num_spatial_filters):
 			raise TypeError("num_spatial_filters parameter must be numeric")
 
-
 		# bandpass filter coefficients
-
-		self.b, self.a = butter(5, np.array([self.bandpass_start, self.bandpass_end])/(self.sfreq/2.0), 'bandpass')
+		self.b, self.a = butter(5, np.array([self.bandpass_start, self.bandpass_end])/(self.sfreq*0.5), 'bandpass')
 
 		# var to hold optimal number of CSP filters
 		self.best_num_filters = 2
 		self.best_score = 0.0
+		self.tuning_csp_num_folds = 2
 
 		# var to hold the trained classifier
 		self.featureTransformer = None
 		self.classifier = None
-
-		# print "Estimator initialized with hyperparameters:"
-		# print "bandpass",self.bandpass_start, self.bandpass_end
-		# print "epoch window",self.epoch_trim_start,self.epoch_trim_end
-		# print "max CSP filter num",self.num_spatial_filters
-
-
 
 	def is_number(self,s):
 		try:
@@ -92,18 +85,12 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 				raise ValueError('X must have at least 3 dimensions.')
 
 	def self_tune(self, verbose=False):
-		best_num = 0
-		best_score = 0.0
-
-		#[tuning_train_X, tuning_test_X, tuning_train_y, tuning_test_y] = train_test_split(X, y, test_size=0.5)
-		#print "tuning_train_X", tuning_train_X.shape, "tuning_train_y", tuning_train_y.shape
-
 		# fix random seed for reproducibility
 		seed = 5
 		np.random.seed(seed)
 
-		# define 10-fold cross validation test harness
-		kfold = StratifiedKFold(y=self.y_, n_folds=2, shuffle=True, random_state=seed)
+		# define k-fold cross validation test harness
+		kfold = StratifiedKFold(y=self.y_, n_folds=self.tuning_csp_num_folds, shuffle=True, random_state=seed)
 
 		cvscores = {}
 		for i in xrange(1,self.num_spatial_filters):
@@ -120,8 +107,8 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 			# try all filters, from the given num down to 2
 			# (1 is too often found to be overfitting)
-			for i in xrange(1,self.num_spatial_filters):
-				num_filters_to_try = i+1
+			for i in xrange(2,self.num_spatial_filters):
+				num_filters_to_try = i
 
 				# apply CSP filters to train data
 				csp.n_components = num_filters_to_try
@@ -149,19 +136,9 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 		return [best_num, best_score]
 
-	def fit(self, X):
-		"""
-		incoming param rawArray contains both X and y
-		"""
-
-		if (type(X) is not mne.io.array.array.RawArray):
-			raise TypeError("X must be of type mne.io.array.array.RawArray")
-
-		# extract the X and y from the RawArray, using MNE methods
-		[X, y] = self.extract_X_y(X)
-
-		# first apply bandpass filter using scipy lfilter
-		#X[self.picks] = lfilter(self.b, self.a, X[self.picks])
+	def fit(self, X, y):
+		# filter and crop X
+		X = self.preprocess_X(X)
 
 		# Check that X and y have correct shape
 		X, y = check_X_y(X, y, allow_nd=True)
@@ -197,37 +174,58 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		# Return the classifier
 		return self
 
-	def extract_X_y(self, rawArray, verbose=False):
+	# def extract_y(self, verbose=False):
+	# 	# first pick out the events
+	# 	self.events = mne.find_events(self.raw, shortest_event=0, consecutive=self.consecutive, verbose=verbose)
+	# 	# now use the events to pick epochs
+	# 	epochs = Epochs(raw=self.raw, events=self.events, event_id=self.class_labels, tmin=self.epoch_full_start, tmax=self.epoch_full_end, proj=True, picks=self.picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+	# 	y = epochs.events[:, -1] - 2
+	# 	return y
 
-		cloneRawArray = rawArray.copy()
-		# # first apply bandpass filter using scipy lfilter
-		cloneRawArray._data[self.picks] = lfilter(self.b, self.a, cloneRawArray._data[self.picks])
+	def preprocess_X(self, X, verbose=False):
 
+		#print "****"
+		#print rawArray._data[self.picks].shape
+
+
+		# Apply band-pass filter
+		#cloneRawArray._data[self.picks] = lfilter(self.b, self.a, cloneRawArray._data[self.picks])
+
+		# first apply bandpass filter using scipy lfilter
 		# alternatively, we could use MNE bandpass filter
-		# iir_params={'a': self.a, 'padlen': 0, 'b': self.b}
+		#iir_params={'a': self.a, 'padlen': 0, 'b': self.b}
 
-		# first pick out the events
-		events = mne.find_events(cloneRawArray, shortest_event=0, consecutive=self.consecutive, verbose=verbose)
+		# clone the raw data that's stored internally
+		###cloneRawArray = self.raw.copy()
 
 		# now use the events to pick epochs
-		epochs = Epochs(raw=cloneRawArray, events=events, event_id=self.class_labels, tmin=self.epoch_full_start, tmax=self.epoch_full_end, proj=True, picks=self.picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+		###epochs = Epochs(raw=cloneRawArray, events=self.events, event_id=self.class_labels, tmin=self.epoch_full_start, tmax=self.epoch_full_end, proj=True, picks=self.picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
 
-		# trim epochs according to hyperparameter for epoch window
-		epochs_trimmed = epochs.copy().crop(tmin=self.epoch_trim_start, tmax=self.epoch_trim_end)
-		if verbose:
-			print "train: epochs",epochs_trimmed
+		###X = epochs.get_data()
 
-		X = epochs_trimmed.get_data()
-		y = epochs_trimmed.events[:, -1] - 2
-		if verbose:
-			print "y", y.shape
+		tmin = math.floor(self.epoch_trim_start*self.sfreq)
+		tmax = math.floor(self.epoch_trim_end*self.sfreq)
 
-		return [X, y]
+		#print "dims", X.shape[0], X.shape[1], X.shape[2]
+		#print "tmask",tmin,tmax,abs(tmax-tmin)
+		#print X[0,0,tmin:tmax].shape
+		#dim3 = tmask[1] - tmask[0]
+
+		# apply bandpass filter to epochs
+		# this will copy each epoch data into a filtered copy
+		filtered_X = np.ndarray(shape=(X.shape[0],X.shape[1],abs(tmax-tmin)))
+		i = 0
+		for x in X:
+			filtered_x = lfilter(self.b,self.a,x)
+			filtered_X[i] = filtered_x[:,tmin:tmax]
+			#print "filtered dims",filtered_X[i].shape
+			i += 1
+		return filtered_X
 
 	def predict(self, X):
 
-		# extract the X and y from the RawArray, using MNE methods
-		[X, y] = self.extract_X_y(X)
+		# filter and crop X
+		X = self.preprocess_X()
 
 		sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
 		X = sklearn.utils.validation.check_array(X, allow_nd=True)
@@ -236,10 +234,10 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		classification_features = self.featureTransformer.transform(X)
 		return self.classifier.predict(classification_features)
 
-	def score(self, X, y=None):
+	def score(self, X, y):
 
-		# extract the X and y from the RawArray, using MNE methods
-		[X, y] = self.extract_X_y(X)
+		# filter and crop X
+		X = self.preprocess_X(X)
 
 		sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
 		X = sklearn.utils.validation.check_array(X, allow_nd=True)
@@ -250,9 +248,6 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		prediction_score = self.classifier.score(classification_features, y)
 
 		return prediction_score
-
-
-
 
 def getPicks(key):
 	return {
@@ -290,7 +285,7 @@ def get_bandpass_ranges():
 
 def get_window_ranges():
 	window_ranges = []
-	possible_ranges = [(0.0,3.0), (0.5,3.0), (2.0,3.5), (1.5,3.0),  (1.0,2.0)]
+	possible_ranges = [(0.0,3.0),(0.5,3.0), (2.0,3.5), (1.5,3.0),  (1.0,2.0)]
 	for r in possible_ranges:
 		window_ranges.append(r)
 	return window_ranges
@@ -371,8 +366,8 @@ def main():
 	opts.event_labels = {'left':2, 'right':3}
 
 	# files
-	train_fname = "data/custom/bci4/train/ds1b.txt"
-	test_fname = "data/custom/bci4/test/ds1b.txt"
+	train_fname = "data/custom/bci4/train/ds1g.txt"
+	test_fname = "data/custom/bci4/test/ds1g.txt"
 	#train_fname = "data/custom/bci4/active_train/ds1b.txt"
 	#test_fname = "data/custom/bci4/active_test/ds1b.txt"
 
@@ -403,6 +398,8 @@ def main():
 	# pick a subset of total electrodes, or else just get all of the channels of type 'eeg'
 	picks = getPicks('motor16') or pick_types(train_info, eeg=True)
 
+	class_labels = {'left':2, 'right':3}
+
 	# hyperparam 1
 	bandpass_combinations = get_bandpass_ranges()
 
@@ -410,16 +407,25 @@ def main():
 	epoch_bounds = get_window_ranges()
 
 	# grid search hyperparams
-	param_grid = dict(bandpass=bandpass_combinations,
-	                  epoch_trim=epoch_bounds)
+	param_grid = dict(bandpass=bandpass_combinations, epoch_trim=epoch_bounds)
 
 	# top ten scores
 	ranked_scores = list()
 	ranked_scores_opts = list()
-	ranked_scores_lda = list()
 
+	# extract X,y from train data
 	train_raw = RawArray(train_nparray, train_info, verbose=verbose)
+	train_events = mne.find_events(train_raw, shortest_event=0, consecutive=True, verbose=verbose)
+	train_epochs = Epochs(raw=train_raw, events=train_events, event_id=class_labels, tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+	train_X = train_epochs.get_data()
+	train_y = train_epochs.events[:, -1] - 2
+
+	# extract X,y from test data
 	test_raw = RawArray(test_nparray, test_info, verbose=verbose)
+	test_events = mne.find_events(test_raw, shortest_event=0, consecutive=True, verbose=verbose)
+	test_epochs = Epochs(raw=test_raw, events=test_events, event_id=class_labels, tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+	test_X = test_epochs.get_data()
+	test_y = test_epochs.events[:, -1] - 2
 
 	for epoch_trim in epoch_bounds:
 		for bandpass in bandpass_combinations:
@@ -428,11 +434,11 @@ def main():
 			foo = CSPEstimator(bandpass=bandpass,
 	                   epoch_trim=epoch_trim,
 	                   num_spatial_filters=6,
-	                   class_labels={'left':2, 'right':3},
+	                   class_labels=class_labels,
 	                   sfreq=100.0,
 	                   picks=picks,
 	                   consecutive=True)
-			score = foo.fit(train_raw).score(test_raw)
+			score = foo.fit(train_X,train_y).score(test_X,test_y)
 			print "current score",score
 			#print foo.get_params()
 			print "bandpass:",foo.bandpass_start,foo.bandpass_end
@@ -444,6 +450,11 @@ def main():
 			idx = bisect(ranked_scores, score)
 			ranked_scores.insert(idx, score)
 			ranked_scores_opts.insert(idx, dict(bandpass=bandpass,epoch_trim=epoch_trim,filters=foo.best_num_filters))
+			if len(ranked_scores) > 10:
+				ranked_scores.pop(0)
+			if len(ranked_scores_opts) > 10:
+				ranked_scores_opts.pop(0)
+
 
 			print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 			print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
@@ -459,12 +470,10 @@ def main():
 				if j>10:
 					break
 
-			print "ranked:",ranked_scores
+			#print "ranked:",ranked_scores
 	######################################################################################
 
-
-
-	analyze(train_nparray, train_info, test_nparray, test_info)
+	#analyze(train_nparray, train_info, test_nparray, test_info)
 	print "total run time", round(time.clock() - total_start,1),"sec"
 	exit()
 
