@@ -21,6 +21,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cross_validation import cross_val_score, ShuffleSplit
 from sklearn.cross_validation import train_test_split, StratifiedKFold
 from sklearn.grid_search import GridSearchCV
+from sklearn.preprocessing import Imputer
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils.multiclass import unique_labels
@@ -29,7 +30,7 @@ from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
 
 class CSPEstimator(BaseEstimator, ClassifierMixin):
 
-	def __init__(self, picks=[0], bandpass=(9.0,15.0), epoch_trim=(1.5,3.0), num_spatial_filters=6, class_labels={'left':2, 'right':3}, sfreq=100.0, epoch_full_start=-0.5, epoch_full_end=3.5, consecutive='increasing'):
+	def __init__(self, picks=[0], num_votes=10, bandpass_filters=[(9.0,15.0)], epoch_bounds=[(1.5,3.0)], num_spatial_filters=6, class_labels={'left':2, 'right':3}, sfreq=100.0, epoch_full_start=-0.5, epoch_full_end=3.5, consecutive='increasing'):
 
 		self.classes_ = []
 
@@ -40,25 +41,8 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		for arg, val in values.items():
 			setattr(self, arg, val)
 
-		# separate out inputs that are tuples
-		self.bandpass_start,self.bandpass_end = bandpass
-		self.epoch_trim_start, self.epoch_trim_end = epoch_trim
-
-		if not self.is_number(self.bandpass_start):
-			raise TypeError("bandpass_start parameter must be numeric")
-		if not self.is_number(self.bandpass_end):
-			raise TypeError("bandpass_end parameter must be numeric")
-
-		if not self.is_number(self.epoch_trim_start):
-			raise TypeError("epoch_trim_start parameter must be numeric")
-		if not self.is_number(self.epoch_trim_end):
-			raise TypeError("epoch_trim_end parameter must be numeric")
-
 		if not self.is_number(self.num_spatial_filters):
 			raise TypeError("num_spatial_filters parameter must be numeric")
-
-		# bandpass filter coefficients
-		self.b, self.a = butter(5, np.array([self.bandpass_start, self.bandpass_end])/(self.sfreq*0.5), 'bandpass')
 
 		# var to hold optimal number of CSP filters
 		self.best_num_filters = 2
@@ -68,6 +52,24 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		# var to hold the trained classifier
 		self.featureTransformer = None
 		self.classifier = None
+
+		# top scores are stored for final ensemble
+		self.ranked_classifiers = list()
+		self.ranked_scores = list()
+		self.ranked_scores_opts = list()
+		self.ranked_transformers = list()
+
+		# # TODO this should be moved up into init()
+		# if not self.is_number(bandpass_start):
+		# 	raise TypeError("bandpass_start parameter must be numeric")
+		# if not self.is_number(bandpass_end):
+		# 	raise TypeError("bandpass_end parameter must be numeric")
+		#
+		# if not self.is_number(epoch_trim_start):
+		# 	raise TypeError("epoch_trim_start parameter must be numeric")
+		# if not self.is_number(epoch_trim_end):
+		# 	raise TypeError("epoch_trim_end parameter must be numeric")
+
 
 	def is_number(self,s):
 		try:
@@ -84,42 +86,45 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 			if X.ndim < 3:
 				raise ValueError('X must have at least 3 dimensions.')
 
-	def self_tune(self, verbose=False):
+	def self_tune(self, X, y, verbose=False):
 		# fix random seed for reproducibility
 		seed = 5
 		np.random.seed(seed)
 
 		# define k-fold cross validation test harness
-		kfold = StratifiedKFold(y=self.y_, n_folds=self.tuning_csp_num_folds, shuffle=True, random_state=seed)
+		kfold = StratifiedKFold(y=y, n_folds=self.tuning_csp_num_folds, shuffle=True, random_state=seed)
 
+		# init scores
 		cvscores = {}
 		for i in xrange(1,self.num_spatial_filters):
 			cvscores[i+1] = 0
 
-		count = 0
 		for i, (train, test) in enumerate(kfold):
-
 			# calculate CSP spatial filters
-			csp = CSP(n_components=self.num_spatial_filters, reg=None, log=True)
-			csp.fit(self.X_[train], self.y_[train])
-
-			count += 1
+			csp = CSP(n_components=self.num_spatial_filters, reg='oas')
+			csp.fit(X[train], y[train])
 
 			# try all filters, from the given num down to 2
 			# (1 is too often found to be overfitting)
-			for i in xrange(2,self.num_spatial_filters):
-				num_filters_to_try = i
+			for j in xrange(2,self.num_spatial_filters):
+				num_filters_to_try = j
 
-				# apply CSP filters to train data
+				# calculate spatial filters
 				csp.n_components = num_filters_to_try
-				tuning_train_LDA_features = csp.transform(self.X_[train])
+				# apply CSP filters to train data
+				tuning_train_LDA_features = csp.transform(X[train])
+				np.nan_to_num(tuning_train_LDA_features)
+				check_X_y(tuning_train_LDA_features, y[train])
 
 				# apply CSP filters to test data
-				tuning_test_LDA_features = csp.transform(self.X_[test])
+				tuning_test_LDA_features = csp.transform(X[test])
+				np.nan_to_num(tuning_test_LDA_features)
+				check_X_y(tuning_test_LDA_features, y[test])
+
 
 				# train LDA
 				lda = LinearDiscriminantAnalysis()
-				prediction_score = lda.fit(tuning_train_LDA_features, self.y_[train]).score(tuning_test_LDA_features, self.y_[test])
+				prediction_score = lda.fit(tuning_train_LDA_features, y[train]).score(tuning_test_LDA_features, y[test])
 
 				cvscores[num_filters_to_try] += prediction_score
 
@@ -127,46 +132,121 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 					print "prediction score", prediction_score, "with",num_filters_to_try,"spatial filters"
 
 		best_num = max(cvscores, key=cvscores.get)
-		best_score = cvscores[best_num] / count
+		best_score = cvscores[best_num] / i+1
 		if verbose:
 			print "best num filters:", best_num, "(average accuracy ",best_score,")"
 			print "average scores per filter num:"
 			for k in cvscores:
-				print k,":", cvscores[k]/count
+				print k,":", cvscores[k]/i+1
 
 		return [best_num, best_score]
 
 	def fit(self, X, y):
-		# filter and crop X
-		X = self.preprocess_X(X)
-
-		# Check that X and y have correct shape
+		# validate
 		X, y = check_X_y(X, y, allow_nd=True)
+		X = sklearn.utils.validation.check_array(X, allow_nd=True)
 
 		# set internal vars
 		self.classes_ = unique_labels(y)
 		self.X_ = X
 		self.y_ = y
 
+		##################################################
+		# split X into train and test sets, so that
+		# grid search can be performed on train set only
+		seed = 7
+		np.random.seed(seed)
+		#X_TRAIN, X_TEST, y_TRAIN, y_TEST = train_test_split(X, y, test_size=0.25, random_state=seed)
 
-		################################################
-		# train / apply CSP with max num filters
-		[self.best_num_filters, best_num_filters_score] = self.self_tune()
+		for epoch_trim in self.epoch_bounds:
+			for bandpass in self.bandpass_filters:
 
-		# now use this insight to really fit
-		# calculate CSP spatial filters
-		csp = CSP(n_components=self.best_num_filters, reg=None, log=True)
-		csp.fit(self.X_, self.y_)
+				X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=seed)
 
-		# now use CSP spatial filters to transform
-		classification_features = csp.transform(self.X_)
+				# X_train = np.copy(X_TRAIN)
+				# X_test = np.copy(X_TEST)
+				# y_train = np.copy(y_TRAIN)
+				# y_test = np.copy(y_TEST)
 
-		# train LDA
-		classifier = LinearDiscriminantAnalysis()
-		classifier.fit(classification_features, self.y_)
 
-		self.featureTransformer = csp
-		self.classifier = classifier
+				# separate out inputs that are tuples
+				bandpass_start,bandpass_end = bandpass
+				epoch_trim_start,epoch_trim_end = epoch_trim
+
+
+
+				# bandpass filter coefficients
+				b, a = butter(5, np.array([bandpass_start, bandpass_end])/(self.sfreq*0.5), 'bandpass')
+
+				# filter and crop TRAINING SET
+				X_train = self.preprocess_X(X_train, b, a, epoch_trim_start, epoch_trim_end)
+				# validate
+				X_train, y_train = check_X_y(X_train, y_train, allow_nd=True)
+				X_train = sklearn.utils.validation.check_array(X_train, allow_nd=True)
+
+				# filter and crop TEST SET
+				X_test = self.preprocess_X(X_test, b, a, epoch_trim_start, epoch_trim_end)
+				# validate
+				X_test, y_test = check_X_y(X_test, y_test, allow_nd=True)
+				X_test = sklearn.utils.validation.check_array(X_test, allow_nd=True)
+
+				###########################################################################
+				# self-tune CSP to find optimal number of filters to use at these settings
+				[best_num_filters, best_num_filters_score] = self.self_tune(X_train, y_train)
+
+				# as an option, we could tune optimal CSP filter num against complete train set
+				#X_tune = self.preprocess_X(X, b, a, epoch_trim_start, epoch_trim_end)
+				#[best_num_filters, best_num_filters_score] = self.self_tune(X_tune, y)
+
+				# now use this insight to really fit with optimal CSP spatial filters
+				transformer = CSP(n_components=best_num_filters, reg='oas')
+				transformer.fit(X_train, y_train)
+
+				# use these CSP spatial filters to transform train and test
+				spatial_filters_train = transformer.transform(X_train)
+				spatial_filters_test = transformer.transform(X_test)
+
+				# put this back in as failsafe if NaN or inf starts cropping up
+				# spatial_filters_train = np.nan_to_num(spatial_filters_train)
+				# check_X_y(spatial_filters_train, y_train)
+				# spatial_filters_test = np.nan_to_num(spatial_filters_test)
+				# check_X_y(spatial_filters_test, y_test)
+
+				# train LDA
+				classifier = LinearDiscriminantAnalysis()
+				classifier.fit(spatial_filters_train, y_train)
+				score = classifier.score(spatial_filters_test, y_test)
+
+				print "current score",score
+				print "bandpass:",bandpass_start,bandpass_end
+				print "epoch window:",epoch_trim_start,epoch_trim_end
+				print best_num_filters,"filters chosen"
+
+				# put in ranked order Top 10 list
+				idx = bisect(self.ranked_scores, score)
+				self.ranked_scores.insert(idx, score)
+				self.ranked_scores_opts.insert(idx, dict(bandpass=bandpass,epoch_trim=epoch_trim,filters=best_num_filters))
+				self.ranked_classifiers.insert(idx,classifier)
+				self.ranked_transformers.insert(idx,transformer)
+
+				if len(self.ranked_scores) > self.num_votes:
+					self.ranked_scores.pop(0)
+				if len(self.ranked_scores_opts) > self.num_votes:
+					self.ranked_scores_opts.pop(0)
+				if len(self.ranked_classifiers) > self.num_votes:
+					self.ranked_classifiers.pop(0)
+				if len(self.ranked_transformers) > self.num_votes:
+					self.ranked_transformers.pop(0)
+
+				print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+				print "          H A L L    O F    F A M E"
+				print
+				#j=1
+				for i in xrange(len(self.ranked_scores)):
+					print i,",",round(self.ranked_scores[i],4),",",
+					print self.ranked_scores_opts[i]
+
 
 		# finish up, set the flag to indicate "fitted" state
 		self.fit_ = True
@@ -174,80 +254,74 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		# Return the classifier
 		return self
 
-	# def extract_y(self, verbose=False):
-	# 	# first pick out the events
-	# 	self.events = mne.find_events(self.raw, shortest_event=0, consecutive=self.consecutive, verbose=verbose)
-	# 	# now use the events to pick epochs
-	# 	epochs = Epochs(raw=self.raw, events=self.events, event_id=self.class_labels, tmin=self.epoch_full_start, tmax=self.epoch_full_end, proj=True, picks=self.picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
-	# 	y = epochs.events[:, -1] - 2
-	# 	return y
+	def preprocess_X(self, X, b, a, epoch_trim_start, epoch_trim_end,verbose=False):
+		if verbose:
+			print "X",X.shape,"b",b,"a",a,"epoch_trim_start",epoch_trim_start,"epoch_trim_end",epoch_trim_end
+		# get the max and tmin times to crop the epoch window
+		tmin = math.floor(epoch_trim_start*self.sfreq)
+		tmax = math.floor(epoch_trim_end*self.sfreq)
+		tmin = int(tmin)
+		tmax = int(tmax)
+		if verbose:
+			print "tmin",tmin,"tmax",tmax
 
-	def preprocess_X(self, X, verbose=False):
-
-		#print "****"
-		#print rawArray._data[self.picks].shape
-
-
-		# Apply band-pass filter
-		#cloneRawArray._data[self.picks] = lfilter(self.b, self.a, cloneRawArray._data[self.picks])
-
-		# first apply bandpass filter using scipy lfilter
-		# alternatively, we could use MNE bandpass filter
-		#iir_params={'a': self.a, 'padlen': 0, 'b': self.b}
-
-		# clone the raw data that's stored internally
-		###cloneRawArray = self.raw.copy()
-
-		# now use the events to pick epochs
-		###epochs = Epochs(raw=cloneRawArray, events=self.events, event_id=self.class_labels, tmin=self.epoch_full_start, tmax=self.epoch_full_end, proj=True, picks=self.picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
-
-		###X = epochs.get_data()
-
-		tmin = math.floor(self.epoch_trim_start*self.sfreq)
-		tmax = math.floor(self.epoch_trim_end*self.sfreq)
-
-		#print "dims", X.shape[0], X.shape[1], X.shape[2]
-		#print "tmask",tmin,tmax,abs(tmax-tmin)
-		#print X[0,0,tmin:tmax].shape
-		#dim3 = tmask[1] - tmask[0]
-
-		# apply bandpass filter to epochs
-		# this will copy each epoch data into a filtered copy
+		# prepare a matrix to hold the processed X, with dimension appropriate for the time crop
 		filtered_X = np.ndarray(shape=(X.shape[0],X.shape[1],abs(tmax-tmin)))
 		i = 0
 		for x in X:
-			filtered_x = lfilter(self.b,self.a,x)
+			# apply bandpass filter to epochs
+			filtered_x = lfilter(b,a,x)
+			# crop epoch into new matrix
 			filtered_X[i] = filtered_x[:,tmin:tmax]
-			#print "filtered dims",filtered_X[i].shape
 			i += 1
 		return filtered_X
 
 	def predict(self, X):
-
-		# filter and crop X
-		X = self.preprocess_X()
-
-		sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
-		X = sklearn.utils.validation.check_array(X, allow_nd=True)
-
-		# use CSP spatial filters to transform (extract features)
-		classification_features = self.featureTransformer.transform(X)
-		return self.classifier.predict(classification_features)
+		"""
+		:param X:
+		:return:
+		"""
+		# # filter and crop X
+		# X = self.preprocess_X(X)
+		#
+		# sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
+		# X = sklearn.utils.validation.check_array(X, allow_nd=True)
+		#
+		# # use CSP spatial filters to transform (extract features)
+		# classification_features = self.featureTransformer.transform(X)
+		# return self.classifier.predict(classification_features)
 
 	def score(self, X, y):
-
-		# filter and crop X
-		X = self.preprocess_X(X)
-
-		sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
+		"""
+		:param X:
+		:param y:
+		:return:
+		"""
+		#sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
 		X = sklearn.utils.validation.check_array(X, allow_nd=True)
 
-		# use CSP spatial filters to transform (extract features)
-		classification_features = self.featureTransformer.transform(X)
+		scores = np.zeros(self.num_votes)
+		for i in xrange(self.num_votes):
+			print "----------------------------------------------"
+			print "predicting with classifier",i+1
+			print self.ranked_scores_opts[i]
+			#print self.ranked_transformers[i]
+			#print self.ranked_classifiers[i]
 
-		prediction_score = self.classifier.score(classification_features, y)
+			bandpass_start,bandpass_end = self.ranked_scores_opts[i]['bandpass']
+			epoch_trim_start,epoch_trim_end = self.ranked_scores_opts[i]['epoch_trim']
+			# bandpass filter coefficients
+			b, a = butter(5, np.array([bandpass_start, bandpass_end])/(self.sfreq*0.5), 'bandpass')
 
-		return prediction_score
+			# filter and crop X
+			X_predict = self.preprocess_X(X,b,a,epoch_trim_start,epoch_trim_end)
+
+			# use CSP spatial filters to transform (extract features)
+			classification_features = self.ranked_transformers[i].transform(X_predict)
+			scores[i] = self.ranked_classifiers[i].score(classification_features, y)
+			print "score: ",scores[i]
+
+		return np.average(scores)
 
 def getPicks(key):
 	return {
@@ -256,23 +330,11 @@ def getPicks(key):
 		'back16': getChannelSubsetBack()
     }.get(key, None)
 
-def analyze(train_nparray, train_info, test_nparray, test_info, verbose=False):
-
-
-	#gs = GridSearchCV(estimator=CSPEstimator(), param_grid=param_grid)
-	# grid_result = gs.fit(train_raw, y=[1 for i in range(len(train_raw._data[0]))])
-	# print gs.best_params_
-	# print grid_result
-	exit()
-
 def parse_args():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-d', '--debug', required=False, default=False, help="debug mode (1 or 0)")
 	opts = parser.parse_args()
 	return opts
-
-def print_opts(opts):
-	print opts.best_num_filters,",",opts.bandpass[0],",",opts.bandpass[1],",",opts.epoch_trim_tmin,",",opts.epoch_trim_tmax
 
 def get_bandpass_ranges():
 	bandpass_combinations = []
@@ -345,38 +407,19 @@ def main():
 	opts = parse_args()
 	verbose = opts.debug
 
-	# variables (parameters)
-	opts.bandpass = (8.0,30.0)      # bandpass filter envelope (min, max)
-	opts.num_spatial_filters = 6    # max num spatial filters to try
-	opts.epoch_full_tmin = -0.5     #
-	opts.epoch_full_tmax = 3.5
-	opts.epoch_trim_tmin = 0.0
-	opts.epoch_trim_tmax = 0.0
-
-	# create a set of many bandpass filter range combinations
-	bandpass_combinations = get_bandpass_ranges()
-	window_ranges = get_window_ranges()
-
-	# vars to store cumulative performance
-	best_score = 0
-	best_opts = None
-
 	# constants
 	sfreq = 100.0
-	opts.event_labels = {'left':2, 'right':3}
+	class_labels = {'left':2, 'right':3}
 
 	# files
-	train_fname = "data/custom/bci4/train/ds1g.txt"
-	test_fname = "data/custom/bci4/test/ds1g.txt"
+	train_fname = "data/custom/bci4/train/ds1b.txt"
+	test_fname = "data/custom/bci4/test/ds1b.txt"
 	#train_fname = "data/custom/bci4/active_train/ds1b.txt"
 	#test_fname = "data/custom/bci4/active_test/ds1b.txt"
 
-	# top ten scores
-	ranked_scores = list()
-	ranked_scores_opts = list()
-	ranked_scores_lda = list()
-
 	#################
+	# LOAD DATA
+
 	eval_start = time.clock()
 	# load train data from training file
 	[train_nparray, train_info] = file_to_nparray(train_fname, sfreq=sfreq, verbose=verbose)
@@ -391,89 +434,51 @@ def main():
 
 	total_start = time.clock()
 
-	#############################################################
-	print "------------------------------------------"
-	print "one pass of estimator"
+	##################
+	# CLASSIFY DATA
 
 	# pick a subset of total electrodes, or else just get all of the channels of type 'eeg'
 	picks = getPicks('motor16') or pick_types(train_info, eeg=True)
 
-	class_labels = {'left':2, 'right':3}
-
 	# hyperparam 1
-	bandpass_combinations = get_bandpass_ranges()
+	bandpass_filters = get_bandpass_ranges()
 
 	# hyperparam 2
 	epoch_bounds = get_window_ranges()
 
-	# grid search hyperparams
-	param_grid = dict(bandpass=bandpass_combinations, epoch_trim=epoch_bounds)
-
-	# top ten scores
-	ranked_scores = list()
-	ranked_scores_opts = list()
-
 	# extract X,y from train data
 	train_raw = RawArray(train_nparray, train_info, verbose=verbose)
 	train_events = mne.find_events(train_raw, shortest_event=0, consecutive=True, verbose=verbose)
-	train_epochs = Epochs(raw=train_raw, events=train_events, event_id=class_labels, tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+	train_epochs = Epochs(raw=train_raw, events=train_events, event_id=class_labels,
+	                      tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None,
+	                      preload=True, add_eeg_ref=False, verbose=verbose)
 	train_X = train_epochs.get_data()
 	train_y = train_epochs.events[:, -1] - 2
 
 	# extract X,y from test data
 	test_raw = RawArray(test_nparray, test_info, verbose=verbose)
 	test_events = mne.find_events(test_raw, shortest_event=0, consecutive=True, verbose=verbose)
-	test_epochs = Epochs(raw=test_raw, events=test_events, event_id=class_labels, tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None, preload=True, add_eeg_ref=False, verbose=verbose)
+	test_epochs = Epochs(raw=test_raw, events=test_events, event_id=class_labels,
+	                     tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None,
+	                     preload=True, add_eeg_ref=False, verbose=verbose)
 	test_X = test_epochs.get_data()
 	test_y = test_epochs.events[:, -1] - 2
 
-	for epoch_trim in epoch_bounds:
-		for bandpass in bandpass_combinations:
-			# bandpass=(8.0,29.0),
-	        #           epoch_trim=(2.0,3.5),
-			foo = CSPEstimator(bandpass=bandpass,
-	                   epoch_trim=epoch_trim,
-	                   num_spatial_filters=6,
-	                   class_labels=class_labels,
-	                   sfreq=100.0,
-	                   picks=picks,
-	                   consecutive=True)
-			score = foo.fit(train_X,train_y).score(test_X,test_y)
-			print "current score",score
-			#print foo.get_params()
-			print "bandpass:",foo.bandpass_start,foo.bandpass_end
-			print "epoch window:",foo.epoch_trim_start,foo.epoch_trim_end
-			print foo.best_num_filters,"filters chosen"
-			print "------------------------- done score"
+	# custom grid search
+	estimator = CSPEstimator(bandpass_filters=bandpass_filters,
+               epoch_bounds=epoch_bounds,
+               num_spatial_filters=6,
+               class_labels=class_labels,
+               sfreq=sfreq,
+               picks=picks,
+               num_votes=6,
+               consecutive=True)
+	estimator.fit(train_X,train_y)
+	score = estimator.score(test_X,test_y)
 
-			# put in ranked order Top 10 list
-			idx = bisect(ranked_scores, score)
-			ranked_scores.insert(idx, score)
-			ranked_scores_opts.insert(idx, dict(bandpass=bandpass,epoch_trim=epoch_trim,filters=foo.best_num_filters))
-			if len(ranked_scores) > 10:
-				ranked_scores.pop(0)
-			if len(ranked_scores_opts) > 10:
-				ranked_scores_opts.pop(0)
-
-
-			print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-			print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-			print "          H A L L    O F    F A M E"
-			print
-
-			print "score,filters,bandpass_low,bandpass_high,window_min,window_max"
-			j=1
-			for i in xrange(len(ranked_scores)-1,0,-1):
-				print len(ranked_scores)-i,",",round(ranked_scores[i],4),",",
-				print ranked_scores_opts[i]
-				j+=1
-				if j>10:
-					break
-
-			#print "ranked:",ranked_scores
-	######################################################################################
-
-	#analyze(train_nparray, train_info, test_nparray, test_info)
+	print "-------------------------------------------"
+	print "average estimator score",score
+	print
 	print "total run time", round(time.clock() - total_start,1),"sec"
 	exit()
 
