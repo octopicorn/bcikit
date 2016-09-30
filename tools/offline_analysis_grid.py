@@ -18,15 +18,12 @@ from mne.decoding import CSP, FilterEstimator
 from scipy.signal import butter, lfilter
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.cross_validation import cross_val_score, ShuffleSplit
 from sklearn.cross_validation import train_test_split, StratifiedKFold
-from sklearn.grid_search import GridSearchCV
 from sklearn.preprocessing import Imputer
-from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils.multiclass import unique_labels
 import sklearn.utils.validation
-from sklearn.utils.validation import check_is_fitted, check_X_y, check_array
+from sklearn.utils.validation import check_X_y, check_array
 
 class CSPEstimator(BaseEstimator, ClassifierMixin):
 
@@ -101,7 +98,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 		for i, (train, test) in enumerate(kfold):
 			# calculate CSP spatial filters
-			csp = CSP(n_components=self.num_spatial_filters, reg='oas')
+			csp = CSP(n_components=self.num_spatial_filters)
 			csp.fit(X[train], y[train])
 
 			# try all filters, from the given num down to 2
@@ -168,7 +165,6 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 				# y_train = np.copy(y_TRAIN)
 				# y_test = np.copy(y_TEST)
 
-
 				# separate out inputs that are tuples
 				bandpass_start,bandpass_end = bandpass
 				epoch_trim_start,epoch_trim_end = epoch_trim
@@ -199,7 +195,14 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 				#[best_num_filters, best_num_filters_score] = self.self_tune(X_tune, y)
 
 				# now use this insight to really fit with optimal CSP spatial filters
-				transformer = CSP(n_components=best_num_filters, reg='oas')
+				"""
+				reg : float | str | None (default None)
+			        if not None, allow regularization for covariance estimation
+			        if float, shrinkage covariance is used (0 <= shrinkage <= 1).
+			        if str, optimal shrinkage using Ledoit-Wolf Shrinkage ('ledoit_wolf')
+			        or Oracle Approximating Shrinkage ('oas').
+				"""
+				transformer = CSP(n_components=best_num_filters, reg='ledoit_wolf')
 				transformer.fit(X_train, y_train)
 
 				# use these CSP spatial filters to transform train and test
@@ -240,7 +243,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 				print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				print "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
-				print "          H A L L    O F    F A M E"
+				print "    T O P  ", self.num_votes, "  C L A S S I F I E R S"
 				print
 				#j=1
 				for i in xrange(len(self.ranked_scores)):
@@ -255,41 +258,97 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		return self
 
 	def preprocess_X(self, X, b, a, epoch_trim_start, epoch_trim_end,verbose=False):
+
 		if verbose:
 			print "X",X.shape,"b",b,"a",a,"epoch_trim_start",epoch_trim_start,"epoch_trim_end",epoch_trim_end
-		# get the max and tmin times to crop the epoch window
-		tmin = math.floor(epoch_trim_start*self.sfreq)
-		tmax = math.floor(epoch_trim_end*self.sfreq)
-		tmin = int(tmin)
-		tmax = int(tmax)
-		if verbose:
-			print "tmin",tmin,"tmax",tmax
 
-		# prepare a matrix to hold the processed X, with dimension appropriate for the time crop
-		filtered_X = np.ndarray(shape=(X.shape[0],X.shape[1],abs(tmax-tmin)))
-		i = 0
-		for x in X:
-			# apply bandpass filter to epochs
-			filtered_x = lfilter(b,a,x)
-			# crop epoch into new matrix
-			filtered_X[i] = filtered_x[:,tmin:tmax]
-			i += 1
-		return filtered_X
 
-	def predict(self, X):
+		if X.ndim == 2:
+			"""
+			If the incoming X is just 2 dimensional, then we can assume it's a single trial.
+			This would happen usually if we're preprocessing a rolling window in online mode
+			in this case, we simply apply the bandpass filter, and assume cropping is handled
+			by the logic that packages rolling windows.
+			"""
+			# prepare a matrix to hold the processed X, with dimension appropriate for the time crop
+			return np.array([lfilter(b,a,X)])
+
+		if X.ndim == 3:
+			"""
+			If the incoming X is 3 dimensional, then we can assume it's a (trials,channels,times) array
+			"""
+			# get the max and tmin times to crop the epoch window
+			tmin = math.floor(epoch_trim_start*self.sfreq)
+			tmax = math.floor(epoch_trim_end*self.sfreq)
+			tmin = int(tmin)
+			tmax = int(tmax)
+			if verbose:
+				print "tmin",tmin,"tmax",tmax
+
+			# prepare a matrix to hold the processed X, with dimension appropriate for the time crop
+			filtered_X = np.ndarray(shape=(X.shape[0],X.shape[1],abs(tmax-tmin)))
+
+			i = 0
+			for x in X:
+				# apply bandpass filter to epochs
+				filtered_x = lfilter(b,a,x)
+				# crop epoch into new matrix
+				filtered_X[i] = filtered_x[:,tmin:tmax]
+				i += 1
+			return filtered_X
+
+	def predict(self, X, y):
 		"""
 		:param X:
 		:return:
 		"""
-		# # filter and crop X
-		# X = self.preprocess_X(X)
-		#
-		# sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
-		# X = sklearn.utils.validation.check_array(X, allow_nd=True)
-		#
-		# # use CSP spatial filters to transform (extract features)
-		# classification_features = self.featureTransformer.transform(X)
-		# return self.classifier.predict(classification_features)
+		X = sklearn.utils.validation.check_array(X, allow_nd=True)
+
+		if X.ndim == 2:
+			trials = 1
+		if X.ndim == 3:
+			trials = X.shape[0]
+
+		predictions = np.zeros((self.num_votes, trials))
+		#decisions = np.zeros((self.num_votes, X.shape[0]))
+		predict_probas = np.zeros((self.num_votes, trials, len(self.classes_)))
+
+		for i in xrange(self.num_votes):
+			# print "----------------------------------------------"
+			# print "predicting with classifier",i+1
+			# print self.ranked_scores_opts[i]
+
+			bandpass_start,bandpass_end = self.ranked_scores_opts[i]['bandpass']
+			epoch_trim_start,epoch_trim_end = self.ranked_scores_opts[i]['epoch_trim']
+			# bandpass filter coefficients
+			b, a = butter(5, np.array([bandpass_start, bandpass_end])/(self.sfreq*0.5), 'bandpass')
+
+			# filter and crop X
+			X_predict = self.preprocess_X(X,b,a,epoch_trim_start,epoch_trim_end)
+
+			# use CSP spatial filters to transform (extract features)
+			classification_features = self.ranked_transformers[i].transform(X_predict)
+
+			#decisions[i] = self.ranked_classifiers[i].decision_function(classification_features)
+			#print "decision: ",decisions[i]
+
+			predictions[i] = self.ranked_classifiers[i].predict(classification_features)
+			#print "predicts: ",predictions[i]
+
+			predict_probas[i] = self.ranked_classifiers[i].predict_proba(classification_features)
+			#print "predict_proba: ",predict_probas[i]
+
+		print "**********************************************"
+		#print "decisions: "
+		#print decisions
+		#print "predicts: "
+		#print predictions
+		#print "classes", self.classes_
+		print "left :2, right:3"
+		print "predict class probability: "
+		print np.around(predict_probas,4)
+		print "REAL Y:", y
+		#return np.average(predictions)
 
 	def score(self, X, y):
 		"""
@@ -297,7 +356,6 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		:param y:
 		:return:
 		"""
-		#sklearn.utils.validation.check_is_fitted(self, ["X_", "y_"])
 		X = sklearn.utils.validation.check_array(X, allow_nd=True)
 
 		scores = np.zeros(self.num_votes)
@@ -305,8 +363,6 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 			print "----------------------------------------------"
 			print "predicting with classifier",i+1
 			print self.ranked_scores_opts[i]
-			#print self.ranked_transformers[i]
-			#print self.ranked_classifiers[i]
 
 			bandpass_start,bandpass_end = self.ranked_scores_opts[i]['bandpass']
 			epoch_trim_start,epoch_trim_end = self.ranked_scores_opts[i]['epoch_trim']
@@ -326,6 +382,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 def getPicks(key):
 	return {
         'motor16': getChannelSubsetMotorBand(),
+		'motor8': getChannelSubsetMotorBand8(),
         'front16': getChannelSubsetFront(),
 		'back16': getChannelSubsetBack()
     }.get(key, None)
@@ -365,6 +422,10 @@ def getChannelSubsetMotorBand():
 	"""Return Channels names."""
 	return [ 24, 25, 26, 27, 28, 29,
 	         30, 31, 32, 33, 34, 35, 36, 37, 38, 39]
+
+def getChannelSubsetMotorBand8():
+	"""Return Channels names."""
+	return [ 25, 26, 27, 29, 30, 31, 3, 7]
 
 def getChannelSubsetFront():
 	"""Return Channels names."""
@@ -412,8 +473,8 @@ def main():
 	class_labels = {'left':2, 'right':3}
 
 	# files
-	train_fname = "data/custom/bci4/train/ds1b.txt"
-	test_fname = "data/custom/bci4/test/ds1b.txt"
+	train_fname = "data/custom/bci4/train/ds1g.txt"
+	test_fname = "data/custom/bci4/test/ds1g.txt"
 	#train_fname = "data/custom/bci4/active_train/ds1b.txt"
 	#test_fname = "data/custom/bci4/active_test/ds1b.txt"
 
@@ -450,19 +511,21 @@ def main():
 	train_raw = RawArray(train_nparray, train_info, verbose=verbose)
 	train_events = mne.find_events(train_raw, shortest_event=0, consecutive=True, verbose=verbose)
 	train_epochs = Epochs(raw=train_raw, events=train_events, event_id=class_labels,
-	                      tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None,
+	                      tmin=-0.5, tmax=3.5, proj=False, picks=picks, baseline=None,
 	                      preload=True, add_eeg_ref=False, verbose=verbose)
 	train_X = train_epochs.get_data()
-	train_y = train_epochs.events[:, -1] - 2
+	train_y = train_epochs.events[:, -1] - 2    # convert classes [2,3] to [0,1]
 
 	# extract X,y from test data
 	test_raw = RawArray(test_nparray, test_info, verbose=verbose)
 	test_events = mne.find_events(test_raw, shortest_event=0, consecutive=True, verbose=verbose)
 	test_epochs = Epochs(raw=test_raw, events=test_events, event_id=class_labels,
-	                     tmin=-0.5, tmax=3.5, proj=True, picks=picks, baseline=None,
+	                     tmin=-0.5, tmax=3.5, proj=False, picks=picks, baseline=None,
 	                     preload=True, add_eeg_ref=False, verbose=verbose)
 	test_X = test_epochs.get_data()
-	test_y = test_epochs.events[:, -1] - 2
+	test_y = test_epochs.events[:, -1] - 2      # convert classes [2,3] to [0,1]
+
+
 
 	# custom grid search
 	estimator = CSPEstimator(bandpass_filters=bandpass_filters,
@@ -474,10 +537,60 @@ def main():
                num_votes=6,
                consecutive=True)
 	estimator.fit(train_X,train_y)
-	score = estimator.score(test_X,test_y)
 
+	#
+	print "-------------------------------------------"
+	score = estimator.score(test_X,test_y)
 	print "-------------------------------------------"
 	print "average estimator score",score
+	print
+	# print
+
+	print "-------------------------------------------"
+	print
+	print "training run time", round(time.clock() - total_start,1),"sec"
+	#exit()
+
+	# just a pause here to allow visual inspection of top classifiers picked by grid search
+	time.sleep(15)
+
+
+	# now we go into predict mode, in which we are going over the test data using sliding windows
+	# this is a simulation of what would happen if we were in "online" mode with live data
+	# for each window, a prediction is given by the ensemble of top classifiers
+	# next to this, we see the actual labels from the real data (i.e. the y vector)
+	print "-------------------------------------------"
+	print "PREDICT"
+	print
+
+
+	####################################################
+	# looping over test data in windows
+	online_data = test_raw._data[picks]
+	online_labels = test_raw.pick_types(stim=True)._data
+	print "test_X", test_X.shape
+	print "test RAW data",online_data.shape
+	print "test RAW labels",online_labels.shape
+	window_size = 150 # 50 sample = 0.5 s
+	window_overlap = 50 #
+
+	np.set_printoptions(suppress=True)
+	for i in xrange(0, online_data.shape[1]-window_size, window_overlap):
+		start = i
+		end = i + window_size
+		window = online_data[:,start:end]
+		class_labels = online_labels[:,start:end]
+		#print window.shape
+		#print class_labels
+		estimator.predict(window, class_labels)
+		#print i,":",i+window_size
+	exit()
+
+
+
+
+
+	estimator.predict(test_X[0:10], test_y[0:10])
 	print
 	print "total run time", round(time.clock() - total_start,1),"sec"
 	exit()
