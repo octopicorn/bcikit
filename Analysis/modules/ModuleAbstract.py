@@ -1,8 +1,8 @@
 __author__ = 'odrulea'
 from abc import ABCMeta, abstractmethod
 from lib.PikaSubscriber import PikaSubscriber
-from cloudbrain.publishers.PikaPublisher import PikaPublisher
-from cloudbrain.utils.metadata_info import get_num_channels
+from lib.PikaPublisher import PikaPublisher
+from lib.devices import get_num_channels
 from lib.constants import colors
 
 class ModuleAbstract(object):

@@ -1,10 +1,8 @@
 __author__ = 'odrulea'
 
-from cloudbrain.utils.metadata_info import get_supported_metrics, get_supported_devices
-from cloudbrain.settings import RABBITMQ_ADDRESS, MOCK_DEVICE_ID
+from lib.devices import get_supported_metrics, get_supported_devices, RABBITMQ_ADDRESS, MOCK_DEVICE_ID
 import argparse
 import imp
-import json
 import os
 import yaml
 import time

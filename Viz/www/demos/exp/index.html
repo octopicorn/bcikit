@@ -1,0 +1,157 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bcikit | Demo</title>
+
+    <link rel="stylesheet" href="/lib/normalize.css" />
+    <link rel="stylesheet" href="/lib/foundation/css/foundation.css" />
+    <link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/demos/demo.css" />
+
+    <style>
+        body {
+          background-color: #FFF;
+        }
+        .cue-container {
+            background-color: #FFF;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+        .cue {
+            text-align: center;
+            vertical-align: middle;
+            padding: 15px 15px;
+        }
+        .cue.placeholder {
+            min-width: 379px;
+            min-height: 425px;
+        }
+        #cue-message {
+            font-size: 28px;
+            min-width: 200px;
+        }
+
+        .control-spacer { height: 150px;}
+    </style>
+<head>
+<body lang="en">
+
+    <!-- back button -->
+    <div class="row full-width">
+
+        <div class="large-12 columns">
+
+
+        </div>
+        <div class="callout">
+          <h5>Motor Imagery Experiment</h5>
+          <p>
+              When ready, press "begin". There will be a countdown to 0, then you will see a +
+              in the center of the screen.<br/>
+              When you see a visual cue on the left or right, imagine moving your hand on the same side.
+          </p>
+          <a href="/">Back</a>
+        </div>
+    </div>
+    <!-- /back button -->
+
+    <section class="section clearfix control-spacer"></section>
+
+
+    <div class="cue-container clearfix">
+        <div class="cue placeholder"><img id="cue-left"  src="left-hand.png"/></div>
+        <div class="cue">
+            <div id="cue-message"></div>
+        </div>
+        <div class="cue placeholder"><img id="cue-right" src="right-hand.png"/></div>
+    </div>
+
+    <section class="section clearfix control-spacer"></section>
+
+    <div class="row full-width">
+        <!-- left pane -->
+        <div>
+            <div class="panel">
+                <section class="section-container">
+
+                    <section id="controls" class="section hidden">
+
+                        <!-- metric channel container -->
+                        <div class="panel">
+
+                            <div class="row">
+                                <div class="small-1 columns"><br/></div>
+                                <div class="small-10 columns offset-1">
+                                    <!-- connection buttons -->
+                                    <button class="button expanded large connect">begin</button>
+                                    <button class="hidden button expanded large alert disconnect">disconnect</button>
+                                </div>
+                                <div class="small-1 columns"><br/></div>
+                            </div>
+
+                            <div class="row">
+                                <div class="small-1 columns"><br/></div>
+                                <div class="small-3 columns">
+                                  <label for="metricSelect" class="text-right middle">Metric</label>
+                                </div>
+                                <div class="small-7 columns">
+                                    <select id="metricSelect"></select>
+                                </div>
+                                <div class="small-1 columns"><br/></div>
+                            </div>
+
+                            <div class="row">
+                                <div class="small-1 columns"><br/></div>
+                                <div class="small-3 columns">
+                                  <label for="metricName" class="text-right middle">Device Name</label>
+                                </div>
+                                <div class="small-7 columns">
+                                    <input id="metricName" type="text" value="octopicorn" size="20" />
+                                </div>
+                                <div class="small-1 columns"><br/></div>
+                            </div>
+                            <div class="row">
+                                <div class="small-1 columns"><br/></div>
+                                <div class="small-3 columns">
+                                  <label for="metricName" class="text-right middle">Device Type</label>
+                                </div>
+                                <div class="small-7 columns">
+                                    <select id="deviceTypeSelect">
+                                        <option value="openbci16" selected>OpenBCI 16 Channel</option>
+                                        <option value="openbci">OpenBCI 8 Channel</option>
+                                    </select>
+                                </div>
+                                <div class="small-1 columns"><br/></div>
+                            </div>
+                        </div>
+                    </section>
+
+                </section>
+            </div>
+        </div>
+        <!-- /left pane -->
+
+
+
+    </div>
+
+    <!-------------------------------------------------------------------------- -->
+    <script src="/lib/jquery/jquery-latest.min.js"></script><!-- http://code.jquery.com/jquery-2.1.4.min.js -->
+    <script src="/lib/foundation/js/vendor/what-input.min.js"></script>
+    <script src="/lib/foundation/js/foundation.min.js"></script>
+    <script>
+      $(document).foundation();
+    </script>
+
+    <!-- websocket and multiplex -->
+    <script src="/lib/sockjs/sockjs.min.js"></script>
+    <!-- https://github.com/sockjs/sockjs-client/blob/master/dist/sockjs-1.0.3.min.js -->
+    <script src="/multiplex.js"></script>
+    <script src="class_cues.js"></script>
+</body>
+</html>

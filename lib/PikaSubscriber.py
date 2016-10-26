@@ -1,8 +1,5 @@
 import pika
-import json
-from cloudbrain.subscribers.SubscriberInterface import Subscriber
-from cloudbrain.utils.metadata_info import get_metrics_names
-from cloudbrain.settings import RABBITMQ_ADDRESS
+from lib.SubscriberInterface import Subscriber
 from lib.constants import colors
 
 class PikaSubscriber(Subscriber):

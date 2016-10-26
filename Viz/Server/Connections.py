@@ -15,7 +15,7 @@ import json
 import logging
 
 from sockjs.tornado.conn import SockJSConnection
-from cloudbrain.settings import RABBITMQ_ADDRESS
+from lib.devices import RABBITMQ_ADDRESS
 
 from TornadoSubscriber import TornadoSubscriber
 from lib.utils import BufferToMatrix, ListConfOutputMetrics
@@ -96,6 +96,8 @@ class ConnectionPlot(SockJSConnection):
             self.handle_channel_subscription(msg_dict)
         elif msg_dict['type'] == 'unsubscription':
             self.handle_channel_unsubscription(msg_dict)
+        elif msg_dict['type'] == 'command':
+            self.handle_channel_command(msg_dict)
 
     def handle_channel_subscription(self, stream_configuration):
         # parameters that can be passed in JSON from client
@@ -106,7 +108,7 @@ class ConnectionPlot(SockJSConnection):
         rabbitmq_address = (stream_configuration['rabbitmq_address'] if 'rabbitmq_address' in stream_configuration else RABBITMQ_ADDRESS)
 
         # debug
-        print "[Tornado Server] Received SUBSCRIBE for Queue [" + device_name + ":" + device_id + ":" + metric + "]"
+        print "[Tornado Server] Received SUBSCRIBE for Queue [" + device_id + ":" + device_name + ":" + metric + "]"
 
         if metric not in self.subscribers:
             self.subscribers[metric] = TornadoSubscriber(callback=self.send_probe_factory(metric, data_type),
@@ -126,6 +128,21 @@ class ConnectionPlot(SockJSConnection):
 
         if unsubscription_msg['metric'] in self.subscribers:
             self.subscribers[unsubscription_msg['metric']].disconnect()
+
+    def handle_channel_command(self, stream_configuration):
+        # parameters that can be passed in JSON from client
+        command = (stream_configuration['command'] if "command" in stream_configuration else None)
+        device_name = (stream_configuration['deviceName'] if "deviceName" in stream_configuration else None)
+        device_id = (stream_configuration['deviceId'] if "deviceId" in stream_configuration else None)
+        metric = (stream_configuration['metric'] if "metric" in stream_configuration else None)
+        data_type = (stream_configuration['dataType'] if "dataType" in stream_configuration else None)
+        rabbitmq_address = (stream_configuration['rabbitmq_address'] if 'rabbitmq_address' in stream_configuration else RABBITMQ_ADDRESS)
+
+        # debug
+        print "[Tornado Server] Received SUBSCRIBE for Queue [" + device_id + ":" + device_name + ":" + metric + "]"
+
+        if metric in self.subscribers:
+            self.subscribers[metric].command(command)
 
     def on_close(self):
         logging.info('Disconnecting client...')

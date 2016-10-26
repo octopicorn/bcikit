@@ -27,6 +27,9 @@ class Filter(ModuleAbstract):
         if self.debug:
             print self.LOGNAME + "setup"
 
+        # sampling_frequency
+        self.sampling_rate = self.module_settings["sampling_rate"] if "sampling_rate" in self.module_settings and self.module_settings["sampling_rate"] is not False else 250.0
+
         # notch
         self.notch_filter = self.module_settings["notch_filter"] if "notch_filter" in self.module_settings and self.module_settings["notch_filter"] is not False else None
 
@@ -39,11 +42,11 @@ class Filter(ModuleAbstract):
         Or http://www.mathworks.com/help/signal/ref/butter.html?s_tid=gn_loc_drop#buct3_m
         """
         if self.notch_filter:
-            self.notch_filter_b, self.notch_filter_a = FilterCoefficients('bandstop',250.0,np.array(self.notch_filter))
+            self.notch_filter_b, self.notch_filter_a = FilterCoefficients('bandstop',self.sampling_rate,np.array(self.notch_filter))
 
         # create the bandpass filter (7-13Hz)
         if self.bandpass_filter:
-            self.bandpass_filter_b, self.bandpass_filter_a = FilterCoefficients('bandpass',250.0,np.array(self.bandpass_filter))
+            self.bandpass_filter_b, self.bandpass_filter_a = FilterCoefficients('bandpass',self.sampling_rate,np.array(self.bandpass_filter))
 
     def filterWindow(self, window, filter_func):
         """
@@ -78,8 +81,28 @@ class Filter(ModuleAbstract):
             # if the input tag is registered as one of our known inputs from conf.yml
             # use this if the input_feature is an array of json records (i.e. eeg)
             for record in buffer_content:
-                if self.debug:
+                print "---------------------------------------------------------------"
+                print record
+                # apply notch filter
+                if self.notch_filter:
+                    channel_data = np.array([float(record['channel_%s' % i]) for i in xrange(self.num_channels)], dtype=int)
+                    filtered_data = self.notchFilter(channel_data)
+                    for i in xrange(self.num_channels):
+                        record['channel_%s' % i] = filtered_data[i]
                     print record
+
+                # apply bandpass filter
+                if self.bandpass_filter:
+                    channel_data = np.array([float(record['channel_%s' % i]) for i in xrange(self.num_channels)])
+                    filtered_data = self.bandpass_filter(channel_data)
+                    for i in xrange(self.num_channels):
+                        record['channel_%s' % i] = filtered_data[i]
+                    print record
+
+                # if self.debug:
+                #     print record
+                self.write('data',record)
+
 
         elif self.inputs['data']['message_type'] == constants.MESSAGE_TYPE_MATRIX:
             # use this if the input_feature is of type matrix (i.e. window)

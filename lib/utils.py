@@ -12,6 +12,9 @@ from collections import Counter
 
 DTYPE_COORD = np.dtype([('x', np.float), ('y', np.float)])
 
+def is_odd(num):
+    return num & 0x1
+
 def MatrixToBuffer(ndarray, dtype = None):
     """
     In order to get a numpy matrix (array of arrays) into a json serializable form, we have to do a base64 encode
