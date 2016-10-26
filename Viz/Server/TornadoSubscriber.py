@@ -23,6 +23,10 @@ class TornadoSubscriber(object):
         self.host = rabbitmq_address
         self.queue_name = None
 
+    def command(self,command):
+        print "*********************"
+        print "GOT COMMAND:",command
+        print "*********************"
 
     def connect(self):
         credentials = pika.PlainCredentials('cloudbrain', 'cloudbrain')

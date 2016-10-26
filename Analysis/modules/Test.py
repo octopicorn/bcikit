@@ -1,6 +1,7 @@
 __author__ = 'odrulea'
 from Analysis.modules.ModuleAbstract import ModuleAbstract
 from lib.utils import BufferToMatrix
+from lib.constants import *
 import json
 import bisect
 import itertools
@@ -33,14 +34,14 @@ class ModuleTest(ModuleAbstract):
         """
         buffer_content = json.loads(body)
 
-        if self.inputs['data']['message_type'] == self.MESSAGE_TYPE_TIME_SAMPLE:
+        if self.inputs['data']['message_type'] == MESSAGE_TYPE_TIME_SAMPLE:
             # if the input tag is registered as one of our known inputs from conf.yml
             # use this if the input_feature is an array of json records (i.e. eeg)
             for record in buffer_content:
                 if self.debug:
                     print record
 
-        elif self.inputs['data']['message_type'] == self.MESSAGE_TYPE_MATRIX:
+        elif self.inputs['data']['message_type'] == MESSAGE_TYPE_MATRIX:
             # use this if the input_feature is of type matrix (i.e. window)
             for record in buffer_content:
                 window = BufferToMatrix(record)

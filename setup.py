@@ -9,15 +9,15 @@ def read(fname):
   return open(path).read()
 
 setup(name="bcikit",
-      version="0.0.1",
-      description="foo",
+      version="0.0.2",
+      description="bcikit decoupled from cloudbrain",
       packages=find_packages(),
       install_requires=[
-          'cloudbrain',
           'mne',
           'numpy',
           'pika',
           'pyliblo',
+          'pyriemann',
           'pyserial',
           'scipy',
           'simplejson',

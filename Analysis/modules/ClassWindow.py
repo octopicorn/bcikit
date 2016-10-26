@@ -157,6 +157,7 @@ class ClassWindow(ModuleAbstract):
                             windowJson = MatrixToBuffer(windowToDeliver)
                             self.write('data', windowJson)
 
+
             elif messageType == constants.MESSAGE_TYPE_MATRIX:
                 # this type of input is currently unsupported
 

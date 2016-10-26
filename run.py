@@ -1,8 +1,7 @@
 __author__ = 'odrulea'
 
-from cloudbrain.utils.metadata_info import get_supported_metrics, get_supported_devices
-from cloudbrain.settings import RABBITMQ_ADDRESS, MOCK_DEVICE_ID
 import argparse
+from lib.devices import RABBITMQ_ADDRESS, MOCK_DEVICE_ID, get_supported_metrics, get_supported_devices
 from Analysis.AnalysisService import AnalysisService
 from Viz.VisualizationServer import VisualizationServer
 from multiprocessing import Process

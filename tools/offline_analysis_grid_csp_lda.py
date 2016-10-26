@@ -19,6 +19,7 @@ from scipy.signal import butter, lfilter
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.cross_validation import train_test_split, StratifiedKFold
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import Imputer
 from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils.multiclass import unique_labels
@@ -138,7 +139,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 		return [best_num, best_score]
 
-	def fit(self, X, y):
+	def fit(self, X, y, type="lda"):
 		# validate
 		X, y = check_X_y(X, y, allow_nd=True)
 		X = sklearn.utils.validation.check_array(X, allow_nd=True)
@@ -147,6 +148,12 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 		self.classes_ = unique_labels(y)
 		self.X_ = X
 		self.y_ = y
+
+		# top scores are stored for final ensemble
+		self.ranked_classifiers = list()
+		self.ranked_scores = list()
+		self.ranked_scores_opts = list()
+		self.ranked_transformers = list()
 
 		##################################################
 		# split X into train and test sets, so that
@@ -215,8 +222,12 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 				# spatial_filters_test = np.nan_to_num(spatial_filters_test)
 				# check_X_y(spatial_filters_test, y_test)
 
-				# train LDA
-				classifier = LinearDiscriminantAnalysis()
+				if type is "lda":
+					# train LDA
+					classifier = LinearDiscriminantAnalysis()
+				elif type is "lr":
+					classifier = LogisticRegression()
+
 				classifier.fit(spatial_filters_train, y_train)
 				score = classifier.score(spatial_filters_test, y_test)
 
@@ -335,7 +346,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 			predictions[i] = self.ranked_classifiers[i].predict(classification_features)
 			#print "predicts: ",predictions[i]
 
-			predict_probas[i] = self.ranked_classifiers[i].predict_proba(classification_features)
+			predict_probas[i] = self.ranked_classifiers[i].predict_log_proba(classification_features)
 			#print "predict_proba: ",predict_probas[i]
 
 		print "**********************************************"
@@ -381,6 +392,7 @@ class CSPEstimator(BaseEstimator, ClassifierMixin):
 
 def getPicks(key):
 	return {
+		'openbci16': getChannelSubsetOpenBCI16(),
         'motor16': getChannelSubsetMotorBand(),
 		'motor8': getChannelSubsetMotorBand8(),
         'front16': getChannelSubsetFront(),
@@ -409,14 +421,24 @@ def get_window_ranges():
 		window_ranges.append(r)
 	return window_ranges
 
-def getChannelNames():
+def getChannelNames(type="openbci16"):
 	"""Return Channels names."""
-	return ['AF3', 'AF4', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'FC5',
+	if type=="openbci16":
+		return ['channel_0', 'channel_1', 'channel_2', 'channel_3', 'channel_4',
+				'channel_5', 'channel_6', 'channel_7', 'channel_8', 'channel_9',
+				'channel_10', 'channel_11', 'channel_12', 'channel_13', 'channel_14',
+				'channel_15']
+	else:
+		return ['AF3', 'AF4', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'FC5',
 			'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'CFC7', 'CFC5', 'CFC3', 'CFC1',
 			'CFC2', 'CFC4', 'CFC6', 'CFC8', 'T7', 'C5', 'C3', 'C1', 'Cz', 'C2',
 			'C4', 'C6', 'T8', 'CCP7', 'CCP5', 'CCP3', 'CCP1', 'CCP2', 'CCP4', 'CCP6',
 			'CCP8', 'CP5', 'CP3', 'CP1', 'CPz', 'CP2', 'CP4', 'CP6', 'P5', 'P3',
 			'P1', 'Pz', 'P2', 'P4', 'P6', 'PO1', 'PO2', 'O1', 'O2']
+
+def getChannelSubsetOpenBCI16():
+	"""Return Channels names."""
+	return [ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 def getChannelSubsetMotorBand():
 	"""Return Channels names."""
@@ -453,7 +475,7 @@ def file_to_nparray(fname, sfreq=100.0, verbose=False):
 	
 	# Read EEG file
 	data = pd.read_table(fname, header=None, names=ch_names)	
-	raw_data = np.array(data[ch_names]).T
+	raw_data = np.array(data[ch_names], dtype=int).T
 
 	# create and populate MNE info structure
 	info = create_info(ch_names, sfreq=sfreq, ch_types=ch_type)
@@ -473,8 +495,11 @@ def main():
 	class_labels = {'left':2, 'right':3}
 
 	# files
-	train_fname = "data/custom/bci4/train/ds1g.txt"
-	test_fname = "data/custom/bci4/test/ds1g.txt"
+	train_fname = "data/custom/trials/motor-imagery-subject-A-train-1.csv"
+	test_fname = "data/custom/trials/motor-imagery-subject-A-test-1.csv"
+	#train_fname = "data/custom/trials/motor-imagery-trial-subject-A-10-26-2016_01-54-59.csv"
+	#train_fname = "data/custom/bci4/train/ds1g.txt"
+	#test_fname = "data/custom/bci4/test/ds1g.txt"
 	#train_fname = "data/custom/bci4/active_train/ds1b.txt"
 	#test_fname = "data/custom/bci4/active_test/ds1b.txt"
 
@@ -499,7 +524,7 @@ def main():
 	# CLASSIFY DATA
 
 	# pick a subset of total electrodes, or else just get all of the channels of type 'eeg'
-	picks = getPicks('motor16') or pick_types(train_info, eeg=True)
+	picks = getPicks('openbci16') or pick_types(train_info, eeg=True)
 
 	# hyperparam 1
 	bandpass_filters = get_bandpass_ranges()
@@ -528,7 +553,7 @@ def main():
 
 
 	# custom grid search
-	estimator = CSPEstimator(bandpass_filters=bandpass_filters,
+	estimator1 = CSPEstimator(bandpass_filters=bandpass_filters,
                epoch_bounds=epoch_bounds,
                num_spatial_filters=6,
                class_labels=class_labels,
@@ -536,20 +561,44 @@ def main():
                picks=picks,
                num_votes=6,
                consecutive=True)
-	estimator.fit(train_X,train_y)
+	estimator1.fit(train_X,train_y)
 
 	#
-	print "-------------------------------------------"
-	score = estimator.score(test_X,test_y)
-	print "-------------------------------------------"
-	print "average estimator score",score
+
 	print
 	# print
 
 	print "-------------------------------------------"
+	print "-------------------------------------------"
+	print "-------------------------------------------"
+	print "-------------------------------------------"
 	print
+	time.sleep(10)
+
+
+	# custom grid search
+	estimator2 = CSPEstimator(bandpass_filters=bandpass_filters,
+               epoch_bounds=epoch_bounds,
+               num_spatial_filters=6,
+               class_labels=class_labels,
+               sfreq=sfreq,
+               picks=picks,
+               num_votes=6,
+               consecutive=True)
+	estimator2.fit(train_X,train_y,type="lr")
+
+	#
+	print "-------------------------------------------"
+	print "LDA"
+	score = estimator1.score(test_X,test_y)
+	print "average estimator score",score
+	print "-------------------------------------------"
+	print "LOGISTIC REGRESSION"
+	score = estimator2.score(test_X,test_y)
+	print "average estimator score",score
+
 	print "training run time", round(time.clock() - total_start,1),"sec"
-	#exit()
+	exit()
 
 	# just a pause here to allow visual inspection of top classifiers picked by grid search
 	time.sleep(15)
@@ -572,7 +621,7 @@ def main():
 	print "test RAW data",online_data.shape
 	print "test RAW labels",online_labels.shape
 	window_size = 150 # 50 sample = 0.5 s
-	window_overlap = 50 #
+	window_overlap = 150 #
 
 	np.set_printoptions(suppress=True)
 	for i in xrange(0, online_data.shape[1]-window_size, window_overlap):
