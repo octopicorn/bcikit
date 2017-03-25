@@ -41,6 +41,14 @@ class OpenBCIBoard(object):
     self.channels_per_packet = 8
     self.read_state = 0
 
+    # if OpenBCI has Daisy module connected, but we are in 8channel mode
+    # we need to tell the board to ignore 8 channels
+    # this is ignored if not OpenBCI 16 channel board
+    if self.channels == 8:
+      print('setting to 8 channels mode')
+      self.ser.write('c')
+
+
   def printBytesIn(self):
     #DEBBUGING: Prints individual incoming bytes 
     if not self.streaming:

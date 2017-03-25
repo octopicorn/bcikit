@@ -3,6 +3,8 @@
 MESSAGE_TYPE_TIME_SAMPLE  = "TIME_SAMPLE"
 # numpy matrix object: base64 encoded matrix of floats
 MESSAGE_TYPE_MATRIX       = "MATRIX"
+# message type used to issue control commands
+MESSAGE_TYPE_COMMAND    = "COMMAND"
 
 # data types
 DATA_TYPE_CLASS_LABELS    = "CLASS_LABELS"
@@ -10,6 +12,7 @@ DATA_TYPE_RAW_DATA        = "RAW_DATA"
 DATA_TYPE_RAW_COORDS      = "RAW_COORDS"
 DATA_TYPE_LABELED_DATA    = "LABELED_DATA"
 DATA_TYPE_LABELED_COORDS  = "LABELED_COORDS"
+DATA_TYPE_STRING          = "STRING"
 
 class colors:
     ENDC = '\033[0m'

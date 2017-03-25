@@ -159,11 +159,12 @@ class ModuleAbstract(object):
                 self.generate()
 
         # it begins!
-        if self.subscriber and self.debug:
-            print self.LOGNAME + " starting subscribers"
+        if self.subscriber:
+            if self.debug:
+                print self.LOGNAME + " starting subscribers"
 
-        self.subscriber.connect()
-        self.subscriber.consume_messages(self.consume)
+            self.subscriber.connect()
+            self.subscriber.consume_messages(self.consume)
 
         return
 

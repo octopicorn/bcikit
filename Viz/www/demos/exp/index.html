@@ -23,9 +23,29 @@
             align-items: center;
         }
         .cue {
+
             text-align: center;
             vertical-align: middle;
             padding: 15px 15px;
+            min-height: 350px;
+        }
+        .cue-img {
+            position: absolute;
+            top: 50%;
+            z-index: 1;
+        }
+        .cue-img.fixation {
+            z-index: 5;
+            top: 85%;
+            lefT: 50%;
+        }
+        .cue-img.class-1 {
+            left: 30%;
+            z-index: 1;
+        }
+        .cue-img.class-2 {
+            right: 30%;
+            z-index: 2;
         }
         .cue.placeholder {
             min-width: 379px;
@@ -33,7 +53,6 @@
         }
         #cue-message {
             font-size: 28px;
-            min-width: 200px;
         }
 
         .control-spacer { height: 150px;}
@@ -64,11 +83,13 @@
 
 
     <div class="cue-container clearfix">
-        <div class="cue placeholder"><img id="cue-left"  src="left-hand.png"/></div>
+        <!--<div class="cue placeholder"><img id="cue-left"  src="left-hand.png"/></div>-->
         <div class="cue">
-            <div id="cue-message"></div>
+            <div class="cue-img class-1"><img id="cue-left"  src="left-hand.png"/></div>
+            <div class="cue-img fixation" id="cue-message">+</div>
+            <div class="cue-img class-2"><img id="cue-right" src="right-hand.png"/></div>
         </div>
-        <div class="cue placeholder"><img id="cue-right" src="right-hand.png"/></div>
+        <!--<div class="cue placeholder"><img id="cue-right" src="right-hand.png"/></div>-->
     </div>
 
     <section class="section clearfix control-spacer"></section>

@@ -76,7 +76,6 @@ class TimeWindow(ModuleAbstract):
         # because of cloudbrain connector publisher convention, this is assumed to be in json format
         # note: when using pika, after retrieving json, keys are always in utf-8 format
         buffer_content = json.loads(body)
-        print buffer_content
         for record in buffer_content:
 
             #print buffer_content

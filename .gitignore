@@ -67,4 +67,4 @@ target/
 data/*.data
 data/custom/
 test.py
-
+node_modules/

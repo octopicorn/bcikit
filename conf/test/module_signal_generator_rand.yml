@@ -11,7 +11,7 @@ modules:
   - id: "origin1"
     class: "SignalGenerator"
     settings:
-      debug: False
+      debug: True
       sampling_rate: 250  # Hz (samples per second)
       range: [-500,3000]   # range of integers, (i.e. [1,10])
       pattern: "rand"   # rand | sine
@@ -47,7 +47,7 @@ modules:
   - id: "viz2"
     class: "Convert"
     settings:
-      debug: True
+      debug: False
     inputs:
       data:
         name: "window"
