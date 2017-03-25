@@ -1,34 +1,35 @@
 var drawCharts = function() {
-    console.log('drawCharts');
     // generates first set of dataPoints
     initChart();
 }
 
 var initChart = function () {
-    console.log('initChart');
+    // hide everything
+    $('#cue-left').addClass('hidden');
+    $('#cue-right').addClass('hidden');
 };
 
 
 var updateCueDisplay = function (data) {
     // sample data packet:  { class:0,metric:"viz_class_cues",timestamp:1477381352070970}
-
+    //console.log('incoming class',data.class)
     switch (data.class){
         case 0:
             //
             $('#cue-message').text("+");
-            $('#cue-left').fadeOut( "slow");//.addClass('hidden');
-            $('#cue-right').fadeOut( "slow");//.addClass('hidden');
+            $('#cue-left').addClass('hidden');
+            $('#cue-right').addClass('hidden');
             break;
         case 2:
-            $('#cue-message').text("");
-            $('#cue-left').fadeIn( "slow");//.removeClass('hidden');
-            $('#cue-right').fadeOut( "slow");//.addClass('hidden');
+            $('#cue-message').text("+");
+            $('#cue-left').removeClass('hidden');
+            $('#cue-right').addClass('hidden');
             //
             break;
         case 3:
-            $('#cue-message').text("");
-            $('#cue-left').fadeOut( "slow");//.addClass('hidden');
-            $('#cue-right').fadeIn( "slow");//.removeClass('hidden');
+            $('#cue-message').text("+");
+            $('#cue-left').addClass('hidden');
+            $('#cue-right').removeClass('hidden');
             //
             break;
     }
@@ -88,7 +89,7 @@ function initCharts(){
 
 
 $(document).ready(function(){
-
+    initCharts();
     // websocket related
     var sockjs_url = '/echo';
     var sockjs = new SockJS(sockjs_url);
@@ -102,6 +103,7 @@ $(document).ready(function(){
         // send request to server across the websocket
         ws.send(jsonRequest);
         console.log('subscribed to metric: '+ metric);
+
 
         // show/hide connect buttons
         $connectButton.addClass('hidden');
@@ -133,6 +135,8 @@ $(document).ready(function(){
             $('#cue-message').text(timer);
             if (--timer < 0) {
                 clearInterval(interval);
+                // place center point indicator
+                $('#cue-message').text("+");
                 connect(ws,metric,jsonRequest);
             }
         },1000)

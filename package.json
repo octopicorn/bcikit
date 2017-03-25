@@ -1,0 +1,25 @@
+{
+  "name": "bcikit",
+  "version": "1.0.0",
+  "description": "Modular analysis of biosensor data streams, with visualization component, especially designed for EEG signals. Currently only supports OpenBCI hardware.",
+  "main": "index.js",
+  "dependencies": {
+    "amqplib": "^0.5.1",
+    "minimist": "^1.2.0",
+    "openbci": "^1.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/octopicorn/bcikit.git"
+  },
+  "author": "Octavian Drulea",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/octopicorn/bcikit/issues"
+  },
+  "homepage": "https://github.com/octopicorn/bcikit#readme"
+}

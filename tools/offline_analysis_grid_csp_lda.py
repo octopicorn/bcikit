@@ -491,7 +491,7 @@ def main():
 	verbose = opts.debug
 
 	# constants
-	sfreq = 100.0
+	sfreq = 125.0
 	class_labels = {'left':2, 'right':3}
 
 	# files
@@ -564,6 +564,7 @@ def main():
 	estimator1.fit(train_X,train_y)
 
 	#
+	exit()
 
 	print
 	# print

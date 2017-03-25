@@ -36,6 +36,9 @@ class Filter(ModuleAbstract):
         # bandpass
         self.bandpass_filter = self.module_settings["bandpass_filter"] if "bandpass_filter" in self.module_settings and self.module_settings["bandpass_filter"] is not False else None
 
+        # class label channel
+        self.class_label_channel_index = self.module_settings["class_label_channel_index"] if "class_label_channel_index" in self.module_settings and self.module_settings["class_label_channel_index"] is not False else None
+
         # create the notch filter coefficients (60 Hz)
         """
         For more info, see http://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.signal.butter.html#scipy.signal.butter
@@ -78,6 +81,9 @@ class Filter(ModuleAbstract):
         buffer_content = json.loads(body)
 
         if self.inputs['data']['message_type'] == constants.MESSAGE_TYPE_TIME_SAMPLE:
+            # THIS IS DEPRECATED
+            # windows are required to properly apply signal processing filters
+
             # if the input tag is registered as one of our known inputs from conf.yml
             # use this if the input_feature is an array of json records (i.e. eeg)
             for record in buffer_content:

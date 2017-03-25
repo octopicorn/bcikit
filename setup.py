@@ -10,7 +10,7 @@ def read(fname):
 
 setup(name="bcikit",
       version="0.0.2",
-      description="bcikit decoupled from cloudbrain",
+      description="bcikit",
       packages=find_packages(),
       install_requires=[
           'mne',
@@ -21,7 +21,7 @@ setup(name="bcikit",
           'pyserial',
           'scipy',
           'simplejson',
-          'scikit-learn',
+          'scikit-learn>=0.18.1',
           'pyyaml'
       ],
       include_package_data=True,

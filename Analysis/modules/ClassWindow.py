@@ -149,6 +149,7 @@ class ClassWindow(ModuleAbstract):
                                 print windowToDeliver.shape
                                 print "next window will be:"
                                 print self.window[:,self.currentClassLabelTimepointIndex:].shape
+                                print windowToDeliver
 
                             # 5. keep data associated with new class label
                             self.window = self.window[:,self.currentClassLabelTimepointIndex:]

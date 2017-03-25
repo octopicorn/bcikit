@@ -1,0 +1,233 @@
+###################################################################
+# Chain modules in the order you want them
+#
+# Each module can specify input and output features.
+# The term "feature" here is interchangeable with "metric" in cloudbrain.
+# "feature" refers specifically to a tag which identifies the appropriate queue in rabbitmq to subscribe to.
+#
+###################################################################
+global:
+  num_channels: 16  # how many outputs to produce (default to device if specified, or 1 if not)
+  sampling_rate: 125  # Hz (samples per second)
+
+modules:
+###################################################################
+  - id: "a1"
+    class: "Connect"
+    settings:
+      debug: True
+      device_name: "openbci16"
+      device_id: "octopicorn"
+      device_port: "/dev/tty.usbserial-DN0096F"
+      device_buffer: 10
+      publisher_type: "pika"
+      outputs:
+        data:
+          message_queues: "eeg"
+          message_type: "TIME_SAMPLE"
+          data_type: "CLASS_LABELS"
+          buffer_size: 1
+
+####################################################################
+#  - id: "foo2"
+#    class: "SignalGenerator"
+#    settings:
+#      debug: False
+#      sampling_rate: 1
+#      generate_at_sampling_rate: True
+#      frequency: 0.5  # Hz (samples per second)
+#      num_channels: 1  # how many outputs to produce
+#      range: [2,3]     # range of integers, (i.e. [1,10])
+#      class_sec: 3
+#      between_class_sec: 6
+#      pattern: "class_labels"   # rand | sine | class_labels
+#    outputs:
+#      data:
+#        message_queues: ["motor_class","viz_class_cues"]
+#        message_type: "TIME_SAMPLE"
+#        data_type: "CLASS_LABELS"
+#        buffer_size: 1
+
+####################################################################
+#  - id: "foo4"
+#    class: "ClassWindow"
+#    settings:
+#      debug: False
+#    inputs:
+#      data:
+#        name: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#      labels:
+#        name: "motor_class"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "CLASS_LABELS"
+#    outputs:
+#      data:
+#        message_queues: "motor_class_windows"
+#        message_type: "MATRIX"
+#        data_type: "LABELED_DATA"
+#        buffer_size: 1
+
+#####################################################################
+#  - id: "record1"
+#    class: "Record"
+#    settings:
+#      debug: False
+#      include_timestamp: False # whether or not to include timestamp in the saved file
+#      # whether or not to add a unique timestamp to the output file (to avoid overwriting other files)
+#      # setting this to True will result in timestamp being appended right before the file extension
+#      include_timestamp_in_filename: True
+#    inputs:
+#      data:
+#        name: "motor_class_windows"
+#        # if using output direct from OpenBCI or Muse device, or from SignalGenerator, uncomment these
+#        #message_type: "TIME_SAMPLE"
+#        #data_type: "RAW_DATA"
+#        # if using output from TimeWindow (matrices), uncomment these
+#        message_queues: "classify_trigger"
+#        message_type: "COMMAND"
+#        data_type: "STRING"
+#    outputs:
+#      data:
+#        # in the .gitignore file at root, there is data/*.data
+#        # this means that any files with .data extension will be ignored
+#        # it is highly recommended to stick with this file extension to avoid altering the git state
+#        # also, if you want to use any other file extension, just set the absolute path to a filepath somewhere outside
+#        # the bcikit project
+#        file: "data/custom/trials/foo.csv"
+#        overwrite_existing: True # overwrite any preexisting file?
+
+#
+####################################################################
+#  - id: "foo4"
+#    class: "Train"
+#    settings:
+#      debug: False
+#    inputs:
+#      data:
+#        name: "motor_class_windows"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#      labels:
+#        name: "motor_class"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "CLASS_LABELS"
+#    outputs:
+#      data:
+#        message_queues: "motor_class_windows"
+#        message_type: "MATRIX"
+#        data_type: "LABELED_DATA"
+#        buffer_size: 1
+
+
+###################################################################
+#  - id: "foo1"
+#    class: "SignalGenerator"
+#    settings:
+#      debug: False
+#      sampling_rate: 125  # Hz (samples per second)
+#      range: [-500,3000]   # range of integers, (i.e. [1,10])
+#      pattern: "rand"   # rand | sine
+#      frequency: 10  # Hz (only used with sine)
+#    outputs:
+#      data:
+#        message_queues: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#        buffer_size: 1
+###################################################################
+#  - id: "f1"
+#    class: "Filter"
+#    settings:
+#      debug: False
+#      sampling_rate: 125  # Hz (samples per second)
+#      notch_filter: [59.0, 61.0]  # 60Hz
+#      #bandpass_filter: [1.0, 200.0] #
+#    inputs:
+#      data:
+#        name: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#    outputs:
+#      data:
+#        message_queues: "filtered"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#        buffer_size: 0
+###################################################################
+
+
+###################################################################
+###################################################################
+###################################################################
+
+#  - id: "foo2"
+#    class: "SignalGenerator"
+#    settings:
+#      debug: False
+#      sampling_rate: 1
+#      generate_at_sampling_rate: True
+#      frequency: 0.5  # Hz (samples per second)
+#      num_channels: 1  # how many outputs to produce
+#      range: [2,3]     # range of integers, (i.e. [1,10])
+#      class_sec: 3
+#      between_class_sec: 6
+#      pattern: "class_labels"   # rand | sine | class_labels
+#    outputs:
+#      data:
+#        message_queues: ["motor_class","viz_class_cues"]
+#        message_type: "TIME_SAMPLE"
+#        data_type: "CLASS_LABELS"
+#        buffer_size: 1
+#
+####################################################################
+#  - id: "foo4"
+#    class: "ClassWindow"
+#    settings:
+#      debug: False
+#    inputs:
+#      data:
+#        name: "eeg"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "RAW_DATA"
+#      labels:
+#        name: "motor_class"
+#        message_type: "TIME_SAMPLE"
+#        data_type: "CLASS_LABELS"
+#    outputs:
+#      data:
+#        message_queues: "motor_class_windows"
+#        message_type: "MATRIX"
+#        data_type: "LABELED_DATA"
+#        buffer_size: 1
+#
+#####################################################################
+#  - id: "record1"
+#    class: "Record"
+#    settings:
+#      debug: True
+#      include_timestamp: False # whether or not to include timestamp in the saved file
+#      # whether or not to add a unique timestamp to the output file (to avoid overwriting other files)
+#      # setting this to True will result in timestamp being appended right before the file extension
+#      include_timestamp_in_filename: True
+#    inputs:
+#      data:
+#        name: "motor_class_windows"
+#        # if using output direct from OpenBCI or Muse device, or from SignalGenerator, uncomment these
+#        #message_type: "TIME_SAMPLE"
+#        #data_type: "RAW_DATA"
+#        # if using output from TimeWindow (matrices), uncomment these
+#        message_type: "MATRIX"
+#        data_type: "LABELED_DATA"
+#    outputs:
+#      data:
+#        # in the .gitignore file at root, there is data/*.data
+#        # this means that any files with .data extension will be ignored
+#        # it is highly recommended to stick with this file extension to avoid altering the git state
+#        # also, if you want to use any other file extension, just set the absolute path to a filepath somewhere outside
+#        # the bcikit project
+#        file: "data/custom/trials/motor-imagery-trial-subject-B.csv"
+#        overwrite_existing: True # overwrite any preexisting file?
+#
+##

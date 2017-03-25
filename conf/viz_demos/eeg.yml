@@ -8,20 +8,20 @@ global:
 
 modules:
 ###################################################################
-#  - id: "origin1"
-#    class: "SignalGenerator"
-#    settings:
-#      debug: False
-#      sampling_rate: 250  # Hz (samples per second)
-#      range: [-500,1000]   # range of integers, (i.e. [1,10])
-#      pattern: "rand"   # rand | sine | files
-#      sine_frequency: 20  # Hz (only used with sine)
-#    outputs:
-#      data:
-#        message_queues: "eeg"
-#        message_type: "TIME_SAMPLE"
-#        data_type: "RAW_DATA"
-#        buffer_size: 0
+  - id: "origin1"
+    class: "SignalGenerator"
+    settings:
+      debug: False
+      sampling_rate: 250  # Hz (samples per second)
+      range: [-500,1000]   # range of integers, (i.e. [1,10])
+      pattern: "rand"   # rand | sine | files
+      sine_frequency: 20  # Hz (only used with sine)
+    outputs:
+      data:
+        message_queues: "eeg"
+        message_type: "TIME_SAMPLE"
+        data_type: "RAW_DATA"
+        buffer_size: 0
 
 ###################################################################
   - id: "viz1"

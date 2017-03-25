@@ -162,6 +162,7 @@ def ListConfOutputMetrics(conf, prefix=None):
     If an option prefix is specified, this will limit response sent to the UI to only include those metrics w/ the prefix
     """
     metrics = []
+    print conf['modules']
     for module in conf['modules']:
         if 'outputs' in module and 'data' in module['outputs']:
             if 'message_queues' in module['outputs']['data']:

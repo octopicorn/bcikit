@@ -8,7 +8,7 @@ from lib.utils import is_odd
 
 class OpenBCIConnector(Connector):
 	def __init__(self, publishers, buffer_size, step_size, device_type='openbci',
-	             device_port='/dev/tty.OpenBCI-DN0094CZ', device_mac=None):
+	             device_port='/dev/tty.usbserial-DN0096FW', device_mac=None):
 		"""
 		:return:
 		"""
@@ -64,7 +64,7 @@ class OpenBCIConnector(Connector):
 				"""
 				message = {}
 				for i in range(8):
-					channel_value = "%.4f" % (sample.channel_data[i] * 10 ** 9)  # Nano volts
+					channel_value = "%.4f" % (sample.channel_data[i] * 10 ** 12)  # Nano volts
 					message["channel_%s" % i] = channel_value
 					message['timestamp'] = int(time.time() * 1000000)  # micro seconds
 
